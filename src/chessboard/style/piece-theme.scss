@@ -1,0 +1,73 @@
+@mixin piece-theme($name, $wp, $wr, $wn, $wb, $wq, $wk, $bp, $br, $bn, $bb, $bq, $bk) {
+  .pieces.#{$name} .piece {
+    &.wp {
+      background-image: url(#{$wp});
+    }
+    &.wr {
+      background-image: url(#{$wr});
+    }
+    &.wn {
+      background-image: url(#{$wn});
+    }
+    &.wb {
+      background-image: url(#{$wb});
+    }
+    &.wq {
+      background-image: url(#{$wq});
+    }
+    &.wk {
+      background-image: url(#{$wk});
+    }
+
+    &.bp {
+      background-image: url(#{$bp});
+    }
+    &.br {
+      background-image: url(#{$br});
+    }
+    &.bn {
+      background-image: url(#{$bn});
+    }
+    &.bb {
+      background-image: url(#{$bb});
+    }
+    &.bq {
+      background-image: url(#{$bq});
+    }
+    &.bk {
+      background-image: url(#{$bk});
+    }
+  }
+}
+
+/** TEMPLATE 
+@import "./piece-theme.scss";
+
+@include piece-theme(
+  "staunty",
+  // white pawn
+  "",
+  // white rook
+  "",
+  // white knight
+  "",
+  // white bishop
+  "",
+  // white queen
+  "",
+  // white king
+  "",
+  // black pawn
+  "",
+  // black rook
+  "",
+  // black knight
+  "",
+  // black bishop
+  "",
+  // black queen
+  "",
+  // black king
+  ""
+);
+*/
