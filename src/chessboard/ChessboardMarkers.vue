@@ -8,8 +8,9 @@
   >
     <g class="marker">
       <template v-for="marker of markers">
+        <template v-if="marker.type === MARKER.NONE"></template>
         <g
-          v-if="marker.type === MARKER.TEXT"
+          v-else-if="marker.type === MARKER.TEXT"
           :transform="`translate(${squareJoinNS(
             squareToPointNS(invertPoint(stringToSquare(marker.square), orientation))
           )})`"

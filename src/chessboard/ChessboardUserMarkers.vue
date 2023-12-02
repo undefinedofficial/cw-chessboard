@@ -8,7 +8,7 @@ import { ref, inject, type Ref } from "vue";
 import ChessboardMarkers from "./ChessboardMarkers.vue";
 import { MouseButton, useDraggable } from "./hooks/dragable";
 import type { Color } from "./types";
-import { MARKER, type Marker } from "./utils/markers";
+import { MARKER, type Marker, type MarkerArrow } from "./utils/markers";
 import { getPointInElement } from "./utils/getPointInElement";
 import { pointToSquare, squareToString, squareValid } from "./utils/point";
 
@@ -22,18 +22,49 @@ const markers = ref<Marker[]>([
 const chessboard = inject<Ref<HTMLDivElement>>("chessboard")!;
 const orientation = inject<Ref<Color>>("orientation")!;
 
-function checkMarker(type: MARKER, square: string) {
-  return !!markers.value.find((marker) => marker.type == type && marker.square == square);
+function switchMarker(marker: Marker) {
+  if (marker.type === MARKER.DOT) {
+    marker.type = MARKER.CIRCLE;
+  } else if (marker.type === MARKER.CIRCLE) {
+    marker.type = MARKER.SQUARE;
+  } else if (marker.type === MARKER.SQUARE) {
+    marker.type = MARKER.NONE;
+  } else if (marker.type === MARKER.NONE) {
+    marker.type = MARKER.DOT;
+  }
+  return marker;
 }
 
+const findMarkerBySquare = (square: string) => markers.value.find((m) => m.square === square);
+const findMarkerBySquareAndType = (square: string, type: Marker["type"]) =>
+  markers.value.find((m) => m.square === square && m.type === type);
+
+const isArrowMarker = (marker: Marker): marker is MarkerArrow => marker.type === MARKER.ARROW;
+
 let holdPress = false;
-let activeMarker: null | Marker = null;
 const { onStart, onMove, onEnd } = useDraggable(chessboard);
 onStart((ev) => {
   if (ev.button && ev.button !== MouseButton.RIGHT && !ev.doubleclick) {
     markers.value.splice(0);
     return true;
   }
+  const point = getPointInElement(chessboard.value, ev);
+  const square = pointToSquare(point, orientation.value, point);
+  if (!squareValid(square)) return;
+
+  const squareStr = squareToString(square);
+  const findMarker = findMarkerBySquare(squareStr);
+  if (findMarker?.square === squareStr && !isArrowMarker(findMarker)) {
+    switchMarker(findMarker);
+    findMarker.color = ev.altclick ? "red" : ev.ctrlclick ? "green" : "blue";
+    return;
+  }
+
+  markers.value.push({
+    type: MARKER.DOT,
+    square: squareToString(square),
+    color: ev.altclick ? "red" : ev.ctrlclick ? "green" : "blue",
+  });
   holdPress = false;
   //   const point = getPointInElement(chessboard.value, ev);
   //   const square = pointToSquare(point, orientation.value, point);
@@ -50,7 +81,22 @@ onMove((ev) => {
   const square = pointToSquare(point, orientation.value, point);
   if (!squareValid(square)) return;
 
+  const squareStr = squareToString(square);
+
+  const lastMarker = markers.value[markers.value.length - 1];
+  if (lastMarker) {
+    if (lastMarker.square !== squareStr) {
+      lastMarker.type = MARKER.ARROW;
+      (lastMarker as MarkerArrow).toSquare = squareStr;
+      (lastMarker as MarkerArrow).color = ev.altclick ? "red" : ev.ctrlclick ? "green" : "blue";
+      return;
+    } else {
+      lastMarker.type = ev.altclick ? MARKER.CIRCLE : ev.ctrlclick ? MARKER.SQUARE : MARKER.DOT;
+    }
+  }
+
   holdPress = true;
+  lastMarker.type = ev.altclick ? MARKER.CIRCLE : ev.ctrlclick ? MARKER.SQUARE : MARKER.DOT;
   markers.value[markers.value.length - 1].square = squareToString(square);
 });
 onEnd((ev) => {
@@ -63,18 +109,30 @@ onEnd((ev) => {
     return;
   }
   const squareStr = squareToString(square);
-  if (holdPress) {
-    markers.value.push({
-      type: MARKER.CIRCLE,
-      square: squareStr,
-    });
-    return;
+  const findMarker = findMarkerBySquare(squareStr);
+  if (findMarker) {
+    const findMarkerIdx = markers.value.indexOf(findMarker);
+    if (findMarker && findMarkerIdx < markers.value.length - 1) {
+      markers.value.splice(findMarkerIdx, 1);
+    }
   }
 
-  if (checkMarker(MARKER.CIRCLE, squareStr)) return;
-  markers.value.push({
-    type: MARKER.CIRCLE,
-    square: squareStr,
-  });
+  const lastMarker = markers.value[markers.value.length - 1];
+  if (lastMarker.type === MARKER.ARROW && lastMarker.square === squareStr) {
+    markers.value.pop();
+  }
+  // if (holdPress) {
+  //   markers.value.push({
+  //     type: MARKER.CIRCLE,
+  //     square: squareStr,
+  //   });
+  //   return;
+  // }
+
+  // if (checkMarker(MARKER.CIRCLE, squareStr)) return;
+  // markers.value.push({
+  //   type: MARKER.CIRCLE,
+  //   square: squareStr,
+  // });
 });
 </script>

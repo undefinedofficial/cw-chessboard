@@ -83,12 +83,13 @@ export function useDraggable<T extends HTMLElement>(el: Ref<T>) {
   };
 
   let prevMouseDown = 0;
-  const onSquareMouseDown = (ev: MouseEvent) => {
+  const onSquarePointerDown = (ev: PointerEvent) => {
     ev.preventDefault();
+    if (!ev.isPrimary) return;
 
-    const nowMouseDown = Date.now();
-    const isDoubleClick = nowMouseDown - prevMouseDown < DOUBLE_CLICK_SENSITIVE;
-    prevMouseDown = nowMouseDown;
+    // const nowMouseDown = Date.now();
+    const isDoubleClick = false; //nowMouseDown - prevMouseDown < DOUBLE_CLICK_SENSITIVE;
+    // prevMouseDown = nowMouseDown;
 
     if (emit(startHandler, mouseToInputEvent(ev, EventMode.START, isDoubleClick))) return;
 
@@ -96,38 +97,38 @@ export function useDraggable<T extends HTMLElement>(el: Ref<T>) {
       emit(moveHandler, mouseToInputEvent(ev, EventMode.MOVE, isDoubleClick));
 
     const onSquareMouseUp = (ev: MouseEvent) => {
-      document.removeEventListener("mousemove", onSquareMouseMove);
-      document.removeEventListener("mouseup", onSquareMouseUp);
+      document.removeEventListener("pointermove", onSquareMouseMove);
+      document.removeEventListener("pointerup", onSquareMouseUp);
       emit(endHandler, mouseToInputEvent(ev, EventMode.END, isDoubleClick));
     };
-
-    document.addEventListener("mousemove", onSquareMouseMove, { passive: true });
-    document.addEventListener("mouseup", onSquareMouseUp, { passive: true });
+    document.addEventListener("pointermove", onSquareMouseMove);
+    document.addEventListener("pointerup", onSquareMouseUp);
   };
 
-  let prevTouchDown = 0;
-  const onSquareTouchStart = (ev: TouchEvent) => {
-    ev.preventDefault();
+  // let prevTouchDown = 0;
+  // const onSquareTouchStart = (ev: TouchEvent) => {
+  //   ev.preventDefault();
+  //   ev.stopPropagation();
 
-    const nowTouchDown = Date.now();
-    const isDoubleClick = nowTouchDown - prevTouchDown > DOUBLE_CLICK_SENSITIVE;
-    prevTouchDown = nowTouchDown;
+  //   const nowTouchDown = Date.now();
+  //   const isDoubleClick = nowTouchDown - prevTouchDown > DOUBLE_CLICK_SENSITIVE;
+  //   prevTouchDown = nowTouchDown;
 
-    emit(startHandler, touchToInputEvent(ev, EventMode.START, isDoubleClick));
+  //   emit(startHandler, touchToInputEvent(ev, EventMode.START, isDoubleClick));
 
-    const onSquareTouchMove = (ev: TouchEvent) =>
-      emit(moveHandler, touchToInputEvent(ev, EventMode.MOVE, isDoubleClick));
+  //   const onSquareTouchMove = (ev: TouchEvent) =>
+  //     emit(moveHandler, touchToInputEvent(ev, EventMode.MOVE, isDoubleClick));
 
-    const onSquareTouchEnd = (ev: TouchEvent) => {
-      emit(endHandler, touchToInputEvent(ev, EventMode.END, isDoubleClick));
+  //   const onSquareTouchEnd = (ev: TouchEvent) => {
+  //     emit(endHandler, touchToInputEvent(ev, EventMode.END, isDoubleClick));
 
-      document.removeEventListener("touchmove", onSquareTouchMove);
-      document.removeEventListener("touchend", onSquareTouchEnd);
-    };
+  //     document.removeEventListener("touchmove", onSquareTouchMove);
+  //     document.removeEventListener("touchend", onSquareTouchEnd);
+  //   };
 
-    document.addEventListener("touchmove", onSquareTouchMove, { passive: true });
-    document.addEventListener("touchend", onSquareTouchEnd, { passive: true });
-  };
+  //   document.addEventListener("touchmove", onSquareTouchMove, { passive: true });
+  //   document.addEventListener("touchend", onSquareTouchEnd, { passive: true });
+  // };
 
   const onContextMenu = (ev: MouseEvent) => {
     ev.preventDefault();
@@ -135,14 +136,12 @@ export function useDraggable<T extends HTMLElement>(el: Ref<T>) {
   onMounted(() => {
     if (!el.value) return console.warn("No element found for mound in useDraggable");
     el.value.addEventListener("contextmenu", onContextMenu);
-    el.value.addEventListener("mousedown", onSquareMouseDown);
-    el.value.addEventListener("touchstart", onSquareTouchStart);
+    el.value.addEventListener("pointerdown", onSquarePointerDown);
   });
   onUnmounted(() => {
     if (!el.value) return console.warn("No element found for unmound in useDraggable");
     el.value.removeEventListener("contextmenu", onContextMenu);
-    el.value.removeEventListener("mousedown", onSquareMouseDown);
-    el.value.removeEventListener("touchstart", onSquareTouchStart);
+    el.value.removeEventListener("pointerdown", onSquarePointerDown);
   });
 
   return { onStart, onMove, onEnd };

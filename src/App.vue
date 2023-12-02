@@ -24,6 +24,7 @@
         @enterSquare="onEnterSquare($event), selectMarkers('active', MARKER.FRAME, [$event])"
         @leaveSquare="onLeaveSquare($event), selectMarkers('active')"
       />
+      <ChessboardUserMarkers />
     </Chessboard>
   </div>
   <div>
@@ -107,6 +108,7 @@ import {
   Chessboard,
   ChessboardMarkers,
   ChessboardControl,
+  ChessboardUserMarkers,
 } from "cw-chessboard/index";
 
 let chess = new Chess();

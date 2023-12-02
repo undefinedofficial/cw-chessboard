@@ -1,4 +1,5 @@
 export const enum MARKER {
+  NONE = "none",
   FRAME = "marker-frame",
   CIRCLE = "marker-circle",
   DOT = "marker-dot",
@@ -13,7 +14,7 @@ interface IMarker {
 }
 
 export interface MarkerPoint extends IMarker {
-  type: MARKER.FRAME | MARKER.CIRCLE | MARKER.DOT | MARKER.SQUARE;
+  type: MARKER.FRAME | MARKER.CIRCLE | MARKER.DOT | MARKER.SQUARE | MARKER.NONE;
 }
 export interface MarkerText extends IMarker {
   type: MARKER.TEXT;
