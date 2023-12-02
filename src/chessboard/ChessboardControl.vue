@@ -12,8 +12,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, inject, type Ref } from "vue";
-import { useDraggable } from "./hooks/dragable";
+import { ref, inject, type Ref, onMounted, onUnmounted } from "vue";
 import { usePieces } from "./hooks/pieces";
 
 import { getPointInElement } from "./utils/getPointInElement";
@@ -82,8 +81,8 @@ function onCancelMove(from: Piece, emited = true) {
   fromSquare = null;
 }
 
-const { onStart, onMove, onEnd } = useDraggable(chessboard);
-onStart((ev) => {
+// const { onStart, onMove, onEnd } = useDraggable(chessboard);
+const onStart = (ev: PointerEvent) => {
   //!  WARNING
   // if (ev.doubleclick && fromSquare) {
   //   onCancelMove(fromSquare!, true);
@@ -118,8 +117,8 @@ onStart((ev) => {
     };
     checkEnterSquare(pointToSquare(point, orientation.value, point));
   });
-});
-onMove((ev) => {
+};
+const onMove = (ev: PointerEvent) => {
   if (!fromSquare || isRejectMove()) return;
 
   const point = getPointInElement(chessboard.value!, ev);
@@ -149,8 +148,8 @@ onMove((ev) => {
   const square = pointToSquare(point, orientation.value, point);
   if (!squareValid(square)) return;
   checkEnterSquare(square);
-});
-onEnd((ev) => {
+};
+const onEnd = (ev: PointerEvent) => {
   if (isRejectMove()) return;
 
   const point = getPointInElement(chessboard.value!, ev);
@@ -189,6 +188,28 @@ onEnd((ev) => {
 
     if (done) await pieces.movePiece(from, square, !holdPress);
   });
+};
+
+const onSquarePointerDown = (ev: PointerEvent) => {
+  ev.preventDefault();
+  if (!ev.isPrimary) return;
+
+  if (onStart(ev)) return;
+
+  const onSquarePointerUp = (ev: PointerEvent) => {
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onSquarePointerUp);
+    onEnd(ev);
+  };
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onSquarePointerUp);
+};
+
+onMounted(() => {
+  chessboard.value.addEventListener("pointerdown", onSquarePointerDown);
+});
+onUnmounted(() => {
+  chessboard.value.removeEventListener("pointerdown", onSquarePointerDown);
 });
 </script>
 
