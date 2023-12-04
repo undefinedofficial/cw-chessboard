@@ -35,3 +35,17 @@ export type MovePieceFunction = (
 ) => Promise<void>;
 
 export type CoordMode = "none" | "left" | "right";
+
+export interface ChessboardProps {
+  fen?: string;
+  orientation?: Color;
+  duration?: number;
+  borderSize?: number;
+  roundSize?: number;
+  fontSize?: number;
+  coordOutside?: boolean;
+  coordMode?: CoordMode;
+  alphaPiece?: boolean;
+  boardSet?: string;
+  pieceSet?: string;
+}

@@ -5,7 +5,7 @@
     enter-active-class="transition-opacity"
     leave-active-class="transition-opacity"
   >
-    <div v-if="coord" class="promotion-dialog pieces" :class="piece_pack">
+    <div v-if="coord" class="promotion-dialog pieces" :class="pieceSet">
       <div
         v-for="(piece, i) in ['q', 'r', 'b', 'n']"
         class="piece promotion-piece"
@@ -23,7 +23,7 @@ import { inject, type Ref, ref } from "vue";
 import type { Color, SquarePoint } from "./types";
 import { invertPoint, stringToSquare } from "./utils/point";
 
-const piece_pack = inject<string>("piecePack")!;
+const pieceSet = inject<string>("pieceSet")!;
 const orientation = inject<Ref<Color>>("orientation")!;
 
 const coord = ref<SquarePoint | null>();

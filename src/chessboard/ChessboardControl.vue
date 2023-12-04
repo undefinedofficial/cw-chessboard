@@ -1,5 +1,5 @@
 <template>
-  <div class="pieces move-field" :class="piecePack">
+  <div class="pieces move-field" :class="pieceSet">
     <div
       v-if="activePiece"
       class="piece"
@@ -42,7 +42,7 @@ const DRAGGING_SENSITIVE = 32;
 
 const chessboard = inject<Ref<HTMLDivElement>>("chessboard")!;
 const pieces = inject<ReturnType<typeof usePieces>>("pieces")!;
-const piecePack = inject<string>("piecePack")!;
+const pieceSet = inject<string>("pieceSet")!;
 const orientation = inject<Ref<Color>>("orientation")!;
 
 let fromSquare: Piece | null = null;

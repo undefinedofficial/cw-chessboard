@@ -3,7 +3,7 @@ import PromotionDialog from "./PromotionDialog.vue";
 import ChessboardControl from "./ChessboardControl.vue";
 import ChessboardMarkers from "./ChessboardMarkers.vue";
 import ChessboardUserMarkers from "./ChessboardUserMarkers.vue";
-import type { Color, InputColor, CoordMode } from "./types";
+import type { Color, InputColor, CoordMode, ChessboardProps } from "./types";
 import {
   MARKER,
   type Marker,
@@ -26,4 +26,5 @@ export {
   type Color,
   type CoordMode,
   type InputColor,
+  type ChessboardProps,
 };

@@ -1,7 +1,7 @@
 <template>
   <div
     class="cw-chessboard chessboard-theme"
-    :class="boardPack"
+    :class="boardSet"
     :style="{
       width: boardSize,
       height: boardSize,
@@ -17,7 +17,7 @@
       }"
     >
       <div ref="chessboard" class="cw-container" :class="{ outside: coordOutside }">
-        <div ref="piecesContainer" class="pieces" :class="piecePack"></div>
+        <div ref="piecesContainer" class="pieces" :class="pieceSet"></div>
         <slot />
       </div>
     </div>
@@ -36,37 +36,22 @@
 import "./style/main.scss";
 import { ref, computed, toRef, provide } from "vue";
 
-import type { Color, CoordMode } from "./types";
+import type { ChessboardProps } from "./types";
 import { useRescale } from "./hooks/rescale";
 import { usePieces } from "./hooks/pieces";
 import ChessboardCoords from "./components/ChessboardCoords.vue";
 
-const props = withDefaults(
-  defineProps<{
-    fen?: string;
-    orientation?: Color;
-    duration?: number;
-    borderSize?: number;
-    roundSize?: number;
-    fontSize?: number;
-    coordOutside?: boolean;
-    coordMode?: CoordMode;
-    alphaPiece?: boolean;
-    boardPack?: string;
-    piecePack?: string;
-  }>(),
-  {
-    fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ",
-    orientation: "w",
-    duration: 300,
-    borderSize: 12,
-    roundSize: 0,
-    fontSize: 24,
-    coordMode: "left",
-    boardPack: "default",
-    piecePack: "default",
-  }
-);
+const props = withDefaults(defineProps<ChessboardProps>(), {
+  fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ",
+  orientation: "w",
+  duration: 300,
+  borderSize: 12,
+  roundSize: 0,
+  fontSize: 24,
+  coordMode: "left",
+  boardSet: "default",
+  pieceSet: "default",
+});
 const wrapper = ref<HTMLElement | null>(null);
 const chessboard = ref<HTMLElement | null>(null);
 const { brdSize, ratioSize, Rescale } = useRescale(wrapper);
@@ -86,13 +71,13 @@ const pieces = usePieces(
   toRef(props, "alphaPiece")
 );
 
-const boardPack = toRef(props, "boardPack");
-const piecePack = toRef(props, "piecePack");
+const boardSet = toRef(props, "boardSet");
+const pieceSet = toRef(props, "pieceSet");
 provide("chessboard", chessboard);
 provide("orientation", color);
 provide("pieces", pieces);
-provide("boardPack", boardPack);
-provide("piecePack", piecePack);
+provide("boardSet", boardSet);
+provide("pieceSet", pieceSet);
 
 defineExpose({
   Rescale,

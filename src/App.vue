@@ -10,8 +10,8 @@
       :coordMode="coordMode"
       :duration="duration"
       :alphaPiece="alphaPiece"
-      :boardPack="boardPack"
-      :piecePack="piecesPack"
+      :boardSet="boardSet"
+      :pieceSet="piecesSet"
     >
       <ChessboardMarkers :markers="markers" />
       <ChessboardControl
@@ -44,11 +44,11 @@
     </div>
     <div>
       board pack
-      <select v-model="boardPack" class="text-black">
+      <select v-model="boardSet" class="text-black">
         <option v-for="th in boards" :value="th">{{ th }}</option>
       </select>
       pieces pack
-      <select v-model="piecesPack" class="text-black">
+      <select v-model="piecesSet" class="text-black">
         <option v-for="th in pieces" :value="th">{{ th }}</option>
       </select>
     </div>
@@ -115,8 +115,8 @@ let chess = new Chess();
 const boards = ["default", "blue", "green", "sport", "wood_light"]; // "wood_light"],
 const pieces = ["default", "staunty", "stock"];
 
-const boardPack = ref("default");
-const piecesPack = ref("staunty");
+const boardSet = ref("default");
+const piecesSet = ref("staunty");
 
 const turn = ref<InputColor>("w");
 const fen = ref(chess.fen());
