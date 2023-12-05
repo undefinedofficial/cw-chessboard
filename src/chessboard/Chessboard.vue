@@ -98,6 +98,11 @@ defineExpose({
   border-color: transparent;
   background-color: transparent;
   box-sizing: border-box;
+  touch-action: none;
+  -o-touch-action: none;
+  -ms-touch-action: none;
+  -webkit-touch-action: none;
+
   // transition: width 0.1s linear, height 10ms linear;
 
   .cw-wrapper {
