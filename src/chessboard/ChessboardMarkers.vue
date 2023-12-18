@@ -39,7 +39,7 @@
           )})`"
         >
           <use
-            :href="`${MarkersDefault}#${marker.type}`"
+            :href="`#${marker.type}`"
             :class="[marker.type, marker.color || 'default']"
             transform="scale(3.2)"
           />
@@ -51,18 +51,21 @@
 
 <script lang="ts" setup>
 import { inject, type Ref } from "vue";
-import MarkersDefault from "./assets/markers/default.svg";
+import MarkersDefault from "./assets/markers/default.svg?raw";
 import ArrowMarker from "./components/ChessboardArrow.vue";
 
 import type { Color } from "./types";
 import { MARKER, type Marker } from "./utils/markers";
 import { invertPoint, stringToSquare, squareToPointNS, squareJoinNS } from "./utils/point";
+import { useInjectCache } from "./hooks/injectCache";
 
 defineProps<{
   markers: Marker[];
 }>();
 
 const orientation = inject<Ref<Color>>("orientation")!;
+
+const { remove } = useInjectCache({ id: "cw-markers", to: "body", content: MarkersDefault });
 </script>
 
 <style lang="scss">

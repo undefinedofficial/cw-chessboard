@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, inject, type Ref, onMounted, onUnmounted } from "vue";
+import { ref, inject, type Ref, onMounted, onUnmounted, onBeforeUnmount } from "vue";
 import { usePieces } from "./hooks/pieces";
 
 import { getPointInElement } from "./utils/getPointInElement";
@@ -208,7 +208,7 @@ const onSquarePointerDown = (ev: PointerEvent) => {
 onMounted(() => {
   chessboard.value.addEventListener("pointerdown", onSquarePointerDown);
 });
-onUnmounted(() => {
+onBeforeUnmount(() => {
   chessboard.value.removeEventListener("pointerdown", onSquarePointerDown);
 });
 </script>
