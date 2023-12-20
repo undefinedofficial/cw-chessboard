@@ -69,6 +69,17 @@ const { remove } = useInjectCache({ id: "cw-markers", to: "body", content: Marke
 </script>
 
 <style lang="scss">
+#cw-markers {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  display: none;
+}
+
 .markers {
   position: absolute;
   left: 0;
