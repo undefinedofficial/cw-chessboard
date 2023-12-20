@@ -6,14 +6,13 @@
     leave-active-class="transition-opacity"
   >
     <div v-if="coord" class="promotion-dialog pieces" :class="pieceSet">
-      <div
+      <button
         v-for="(piece, i) in ['q', 'r', 'b', 'n']"
         class="piece promotion-piece"
         :class="`w${piece}`"
         :style="{ transform: `translate(${coord.x * 100}%, ${i * 100}%)` }"
-        @mousedown.stop="resolveHandler(piece)"
-        @touchstart.stop="resolveHandler(piece)"
-      ></div>
+        @pointerdown.stop="resolveHandler(piece)"
+      ></button>
     </div>
   </Transition>
 </template>
@@ -31,6 +30,8 @@ let resolveHandler: (result: string) => void;
 let rejectHandler: () => void;
 const require = (square: string) =>
   new Promise<string>((resolve, reject) => {
+    if (coord.value) return rejectHandler();
+
     coord.value = invertPoint(stringToSquare(square), orientation.value);
     resolveHandler = (piece: string) => {
       coord.value = null;
