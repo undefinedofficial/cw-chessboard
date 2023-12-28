@@ -41,9 +41,25 @@ export function useRescale(element: Ref<HTMLElement | null>) {
       else if (height === 0) brdSize.value = width;
     }, 10);
   }
-  window.addEventListener("resize", Rescale);
-  onMounted(Rescale);
-  onUnmounted(() => window.removeEventListener("resize", Rescale));
+
+  let offRescale: Function;
+  onMounted(() => {
+    // if (window.ResizeObserver) {
+    //   const observer = new ResizeObserver(Rescale);
+    //   observer.observe(element.value!, { box: "border-box" });
+    //   observer.observe(element.value!.parentElement!);
+    //   // observer.observe(document.body);
+    //   hRescale = () => observer.disconnect();
+    // } else {
+    window.addEventListener("resize", Rescale);
+    offRescale = () => window.removeEventListener("resize", Rescale);
+    // }
+
+    Rescale();
+  });
+  onUnmounted(() => {
+    offRescale?.();
+  });
   return {
     brdSize,
     ratioSize,

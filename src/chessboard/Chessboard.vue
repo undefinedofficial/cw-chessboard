@@ -8,6 +8,7 @@
       fontSize: fontScale,
     }"
   >
+    <slot name="before" />
     <div
       ref="wrapper"
       class="cw-wrapper"
@@ -29,6 +30,7 @@
       :orientation="orientation"
       :coordOutside="coordOutside"
     />
+    <slot name="after" />
   </div>
 </template>
 
@@ -80,6 +82,7 @@ provide("boardSet", boardSet);
 provide("pieceSet", pieceSet);
 
 defineExpose({
+  boardSize: brdSize,
   Rescale,
 });
 </script>

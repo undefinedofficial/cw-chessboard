@@ -42,7 +42,7 @@ const isArrowMarker = (marker: Marker): marker is MarkerArrow => marker.type ===
 
 let holdPress = false;
 const onStart = (ev: PointerEvent) => {
-  if (ev.button && ev.button !== 2 && !ev.doubleclick) {
+  if (ev.button && ev.button !== 2) {
     markers.value.splice(0);
     return true;
   }
