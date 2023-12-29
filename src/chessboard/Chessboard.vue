@@ -56,7 +56,9 @@ const props = withDefaults(defineProps<ChessboardProps>(), {
 });
 const wrapper = ref<HTMLElement | null>(null);
 const chessboard = ref<HTMLElement | null>(null);
-const { brdSize, ratioSize, Rescale } = useRescale(wrapper);
+const { brdSize, ratioSize, Rescale } = useRescale(
+  computed(() => wrapper.value!.parentElement!.parentElement)
+);
 
 const boardSize = computed(() => `${brdSize.value}px`);
 const boardRoundScale = computed(() => `${props.roundSize * ratioSize.value}px`);

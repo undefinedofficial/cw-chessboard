@@ -1,6 +1,6 @@
-import { type Ref, onMounted, onUnmounted, ref } from "vue";
+import { type Ref, onMounted, onUnmounted, ref, type MaybeRefOrGetter, toValue } from "vue";
 
-export function useRescale(element: Ref<HTMLElement | null>) {
+export function useRescale(element: MaybeRefOrGetter<HTMLElement | null>) {
   const brdSize = ref<number>(1024);
   const ratioSize = ref<number>(1);
   function getClientSize(element: HTMLElement) {
@@ -14,18 +14,19 @@ export function useRescale(element: Ref<HTMLElement | null>) {
   function Rescale() {
     if (hScale) clearTimeout(hScale);
     hScale = setTimeout(() => {
-      if (!element.value) return;
+      const el = toValue(element);
+      if (!el) return;
 
       let size;
-      let field = element.value!.parentElement!;
+      let field = el;
       while (!size) {
-        field = field.parentElement!;
-        if (field === null) {
+        if (field) {
+          size = getClientSize(field);
+        } else {
           size = { width: 128, height: 128 };
           break;
-        } else {
-          size = getClientSize(field);
         }
+        field = field.parentElement!;
       }
       const { height, width } = size;
       if (width < height) {
@@ -44,22 +45,17 @@ export function useRescale(element: Ref<HTMLElement | null>) {
 
   let offRescale: Function;
   onMounted(() => {
-    // if (window.ResizeObserver) {
-    //   const observer = new ResizeObserver(Rescale);
-    //   observer.observe(element.value!, { box: "border-box" });
-    //   observer.observe(element.value!.parentElement!);
-    //   // observer.observe(document.body);
-    //   hRescale = () => observer.disconnect();
-    // } else {
-    window.addEventListener("resize", Rescale);
-    offRescale = () => window.removeEventListener("resize", Rescale);
-    // }
-
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(Rescale);
+      observer.observe(toValue(element));
+      offRescale = () => observer.disconnect();
+    } else {
+      window.addEventListener("resize", Rescale);
+      offRescale = () => window.removeEventListener("resize", Rescale);
+    }
     Rescale();
   });
-  onUnmounted(() => {
-    offRescale?.();
-  });
+  onUnmounted(() => offRescale?.());
   return {
     brdSize,
     ratioSize,

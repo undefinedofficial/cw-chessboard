@@ -27,7 +27,7 @@
       <ChessboardUserMarkers />
     </Chessboard>
   </div>
-  <div>
+  <div class="chessboard-config">
     <div class="space-x-4">
       <input type="range" min="0" max="100" v-model.number="borderSize" />
       <input type="range" min="0" max="100" v-model.number="roundSize" />
@@ -208,13 +208,30 @@ body,
   margin: 0;
   padding: 0;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  /* justify-content: center; */
+  /* align-items: center; */
 }
 
 .chessboard-preview {
-  margin: 50px;
+  /* margin: 50px; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
   max-width: 100vw;
   max-height: 100vh;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chessboard-config {
+  display: flex;
+  flex-direction: column;
+  /* align-items: center; */
+  justify-content: center;
+  height: 100%;
+  width: 256px;
+  min-width: 256px;
+  max-width: 256px;
 }
 </style>
