@@ -98,6 +98,11 @@ const seekChanges = (fromSquares: SquareType[], toSquares: SquareType[]) => {
   return changes;
 };
 
+interface PieceSquare {
+  name: PieceSymbol;
+  color: Color;
+}
+
 export function usePieces(
   container: Ref<HTMLElement | null>,
   fen: Ref<string>,
@@ -106,12 +111,7 @@ export function usePieces(
   alphaPiece: Ref<boolean>
 ) {
   let squares: SquareType[] = [];
-  const getPieceByIndex = (
-    idx: number
-  ): {
-    name: PieceSymbol;
-    color: Color;
-  } | null => {
+  const getPieceByIndex = (idx: number): null | PieceSquare => {
     const square = squares[idx];
     if (!square) return null;
     const name = square.toLowerCase() as PieceSymbol;
@@ -165,15 +165,15 @@ export function usePieces(
     squares = newsquares;
   }
 
-  watch(fen, () => {
-    runAnimate(squares, stringToFen(fen.value), duration.value).then(() => redraw());
-  });
+  watch(fen, () =>
+    runAnimate(squares, stringToFen(fen.value), duration.value).then(() => redraw())
+  );
   watch(orientation, () =>
     runAnimate(squares, [], duration.value).then(() =>
       runAnimate([], squares, duration.value).then(() => redraw(squares))
     )
   );
-  onMounted(() => redraw());
+  onMounted(redraw);
 
   function createAnimation(fromSquares: SquareType[], toSquares: SquareType[]) {
     const changes = seekChanges(fromSquares, toSquares);
@@ -182,10 +182,11 @@ export function usePieces(
       const at = indexToPoint(change.atIndex!);
       switch (change.type) {
         case CHANGE_TYPE.MOVE: {
-          const element = getPieceElement(at, change.piece)!;
+          const element = getPieceElement(at, change.piece);
+          if (!element) return;
           container.value!.appendChild(element); // move element to top layer
-          const atPoint = invertPoint(indexToPoint(change.atIndex!), orientation.value);
-          const toPoint = invertPoint(indexToPoint(change.toIndex!), orientation.value);
+          const atPoint = invertPoint(indexToPoint(change.atIndex), orientation.value);
+          const toPoint = invertPoint(indexToPoint(change.toIndex), orientation.value);
           animatedElements.push({
             type: change.type,
             element,
@@ -195,10 +196,10 @@ export function usePieces(
           break;
         }
         case CHANGE_TYPE.ADD:
-          const element = createPieceElement(at, change.piece!);
+          const element = createPieceElement(at, change.piece);
           element.style.opacity = "0";
           container.value!.appendChild(element);
-          const atPoint = invertPoint(indexToPoint(change.atIndex!), orientation.value);
+          const atPoint = invertPoint(indexToPoint(change.atIndex), orientation.value);
           animatedElements.push({
             type: change.type,
             element,
@@ -206,7 +207,8 @@ export function usePieces(
           });
           break;
         case CHANGE_TYPE.REMOVE:
-          const piece = getPieceElement(at, change.piece)!;
+          const piece = getPieceElement(at, change.piece);
+          if (!piece) return;
           animatedElements.push({
             type: change.type,
             element: piece,
@@ -216,6 +218,8 @@ export function usePieces(
     });
     return animatedElements;
   }
+
+  let frameHandle: number | null = null;
 
   function runAnimate(fromSquares: SquareType[], toSquares: SquareType[], duration: number) {
     return new Promise<void>((resolve) => {
@@ -228,7 +232,10 @@ export function usePieces(
         if (!startTime) startTime = time;
         const timeDiff = time - startTime;
         if (timeDiff > duration) {
-          cancelAnimationFrame(frameHandle);
+          if (frameHandle) {
+            cancelAnimationFrame(frameHandle);
+            frameHandle = null;
+          }
           // console.log("ANIMATION FINISHED");
           animatedElements.forEach((animatedItem) => {
             // fix bug z-index
@@ -273,7 +280,8 @@ export function usePieces(
           }
         });
       }
-      let frameHandle = requestAnimationFrame(animationStep);
+      // if (frameHandle) cancelAnimationFrame(frameHandle);
+      frameHandle = requestAnimationFrame(animationStep);
     });
   }
 
@@ -288,7 +296,7 @@ export function usePieces(
 
     if (animate) await runAnimate(squares, newSquares, duration.value);
     squares = newSquares;
-    return Promise.resolve(redraw(newSquares));
+    return redraw(newSquares);
   }
   return { redraw, getPieceByIndex, getPieceByPoint, movePiece, setAlphaPiece };
 }

@@ -36,7 +36,7 @@
 
 <script lang="ts" setup>
 import "./style/main.scss";
-import { ref, computed, toRef, provide } from "vue";
+import { ref, computed, toRef, provide, onMounted } from "vue";
 
 import type { ChessboardProps } from "./types";
 import { useRescale } from "./hooks/rescale";
@@ -54,13 +54,16 @@ const props = withDefaults(defineProps<ChessboardProps>(), {
   boardSet: "default",
   pieceSet: "default",
 });
+
+const emit = defineEmits<{
+  ready: [];
+}>();
 const wrapper = ref<HTMLElement | null>(null);
 const chessboard = ref<HTMLElement | null>(null);
-const { brdSize, ratioSize, Rescale } = useRescale(
-  computed(() => wrapper.value!.parentElement!.parentElement)
-);
+const { size, Rescale } = useRescale(computed(() => wrapper.value!.parentElement!.parentElement));
 
-const boardSize = computed(() => `${brdSize.value}px`);
+const ratioSize = computed(() => size.value / 900);
+const boardSize = computed(() => `${size.value}px`);
 const boardRoundScale = computed(() => `${props.roundSize * ratioSize.value}px`);
 const borderScale = computed(() => `${props.borderSize * ratioSize.value}px`);
 const fontScale = computed(() => `${props.fontSize * ratioSize.value}px`);
@@ -83,8 +86,10 @@ provide("pieces", pieces);
 provide("boardSet", boardSet);
 provide("pieceSet", pieceSet);
 
+onMounted(() => emit("ready"));
+
 defineExpose({
-  boardSize: brdSize,
+  boardSize: size,
   Rescale,
 });
 </script>
@@ -103,12 +108,15 @@ defineExpose({
   border-color: transparent;
   background-color: transparent;
   box-sizing: border-box;
-  touch-action: none;
-  -o-touch-action: none;
-  -ms-touch-action: none;
-  -webkit-touch-action: none;
 
-  // transition: width 0.1s linear, height 10ms linear;
+  &.active {
+    cursor: pointer;
+    touch-action: none;
+    -o-touch-action: none;
+    -ms-touch-action: none;
+    -webkit-touch-action: none;
+  }
+  transition: font-size 0.1s linear;
 
   .cw-wrapper {
     display: inline-block;
@@ -117,11 +125,11 @@ defineExpose({
     border-style: solid;
     overflow: hidden;
     box-sizing: border-box;
+    transition: all 0.1s linear;
 
     .cw-container {
       display: inline-block;
       position: relative;
-      cursor: pointer;
       width: 100%;
       height: 100%;
       box-sizing: border-box;

@@ -1,5 +1,5 @@
 <template>
-  <div class="chessboard-coords" v-if="coordMode !== 'none'">
+  <div class="chessboard-coords" v-if="isShow">
     <div
       class="coords numbers"
       :class="{
@@ -35,6 +35,7 @@ const props = defineProps<{
   coordOutside?: boolean;
 }>();
 
+const isShow = computed(() => props.coordMode !== "none");
 const isRight = computed(() => props.coordMode === "right");
 </script>
 
@@ -49,6 +50,7 @@ const isRight = computed(() => props.coordMode === "right");
   .coords {
     pointer-events: none;
     position: absolute;
+    transition: all 0.1s linear;
 
     .coord {
       display: block;
@@ -77,7 +79,7 @@ const isRight = computed(() => props.coordMode === "right");
     }
     &.coords-right.numbers {
       left: auto;
-      right: 0;
+      right: 2px;
       &.outside {
         transform: translateX(140%);
       }
