@@ -81,7 +81,6 @@ function onCancelMove(from: Piece, emited = true) {
   fromSquare = null;
 }
 
-// const { onStart, onMove, onEnd } = useDraggable(chessboard);
 const onStart = (ev: PointerEvent) => {
   //!  WARNING
   // if (ev.doubleclick && fromSquare) {
@@ -206,9 +205,12 @@ const onSquarePointerDown = (ev: PointerEvent) => {
 };
 
 onMounted(() => {
+  if (!chessboard.value) return console.warn("Chessboard not found");
+  chessboard.value.style.touchAction = "none";
   chessboard.value.addEventListener("pointerdown", onSquarePointerDown);
 });
 onBeforeUnmount(() => {
+  chessboard.value.style.touchAction = "auto";
   chessboard.value.removeEventListener("pointerdown", onSquarePointerDown);
 });
 </script>

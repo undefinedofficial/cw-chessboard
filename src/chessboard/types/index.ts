@@ -36,6 +36,8 @@ export type MovePieceFunction = (
 
 export type CoordMode = "none" | "left" | "right";
 
+export type ChessboardResize = true | false | "width" | "height";
+
 export interface ChessboardProps {
   fen?: string;
   orientation?: Color;
@@ -48,4 +50,5 @@ export interface ChessboardProps {
   alphaPiece?: boolean;
   boardSet?: string;
   pieceSet?: string;
+  resize?: ChessboardResize;
 }

@@ -53,6 +53,7 @@ const props = withDefaults(defineProps<ChessboardProps>(), {
   coordMode: "left",
   boardSet: "default",
   pieceSet: "default",
+  resize: true,
 });
 
 const emit = defineEmits<{
@@ -60,7 +61,10 @@ const emit = defineEmits<{
 }>();
 const wrapper = ref<HTMLElement | null>(null);
 const chessboard = ref<HTMLElement | null>(null);
-const { size, Rescale } = useRescale(computed(() => wrapper.value!.parentElement!.parentElement));
+const { size, Rescale } = useRescale(
+  computed(() => wrapper.value!.parentElement!.parentElement),
+  toRef(props, "resize")
+);
 
 const ratioSize = computed(() => size.value / 900);
 const boardSize = computed(() => `${size.value}px`);
@@ -116,7 +120,6 @@ defineExpose({
     -ms-touch-action: none;
     -webkit-touch-action: none;
   }
-  transition: font-size 0.1s linear;
 
   .cw-wrapper {
     display: inline-block;
@@ -125,7 +128,6 @@ defineExpose({
     border-style: solid;
     overflow: hidden;
     box-sizing: border-box;
-    transition: all 0.1s linear;
 
     .cw-container {
       display: inline-block;

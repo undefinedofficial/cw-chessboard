@@ -155,12 +155,14 @@ export function usePieces(
   }
 
   function redraw(newsquares = stringToFen(fen.value)) {
-    container.value!.innerHTML = "";
+    if (container.value == null) return console.warn("container is null");
+
+    container.value.innerHTML = "";
 
     for (let i = 0; i < newsquares.length; i++) {
       const piece = newsquares[i];
       if (!piece) continue;
-      container.value!.appendChild(createPieceElement(indexToPoint(i), piece));
+      container.value.appendChild(createPieceElement(indexToPoint(i), piece));
     }
     squares = newsquares;
   }

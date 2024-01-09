@@ -142,9 +142,9 @@ const onSquarePointerDown = (ev: PointerEvent) => {
 };
 
 onMounted(() => {
-  chessboard.value.addEventListener("pointerdown", onSquarePointerDown);
+  chessboard.value?.addEventListener("pointerdown", onSquarePointerDown);
 });
 onUnmounted(() => {
-  chessboard.value.removeEventListener("pointerdown", onSquarePointerDown);
+  chessboard.value?.removeEventListener("pointerdown", onSquarePointerDown);
 });
 </script>

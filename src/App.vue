@@ -173,12 +173,16 @@ const onBeforeMove = (square: string, done: (accept: boolean) => void) => {
   );
   done(true);
 };
-const onAfterMove = (fromSquare: string, toSquare: string, done: (accept: boolean) => void) => {
+const onAfterMove = async (
+  fromSquare: string,
+  toSquare: string,
+  done: (accept: boolean) => void
+) => {
   console.log("AfterMove: ", fromSquare, toSquare);
   selectMarkers("selected");
   selectMarkers("active");
   const move = chess.move({ from: fromSquare, to: toSquare });
-  if (!move) return done(false);
+  if (!move) return await done(false);
 
   done(true);
   fen.value = chess.fen();
