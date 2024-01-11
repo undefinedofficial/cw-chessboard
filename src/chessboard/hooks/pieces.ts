@@ -2,6 +2,7 @@ import { type Ref, watch, onMounted } from "vue";
 import { indexToPoint, stringToFen, type SquareType, pointToIndex } from "./fen";
 import type { Color, PieceSymbol, Point } from "../types";
 import { invertPoint, squareToString } from "../utils/point";
+import { useQueue } from "./queue";
 
 const enum CHANGE_TYPE {
   ADD,
@@ -221,70 +222,75 @@ export function usePieces(
     return animatedElements;
   }
 
-  let frameHandle: number | null = null;
+  const { IsRunning, addTask, clear, run } = useQueue();
 
-  function runAnimate(fromSquares: SquareType[], toSquares: SquareType[], duration: number) {
-    return new Promise<void>((resolve) => {
-      const animatedElements = createAnimation(fromSquares, toSquares);
+  async function runAnimate(fromSquares: SquareType[], toSquares: SquareType[], duration: number) {
+    const task = addTask(() => {
+      return new Promise<void>((resolve) => {
+        const animatedElements = createAnimation(fromSquares, toSquares);
 
-      let startTime: number;
-      function animationStep(time: number) {
-        // console.log("animationStep", time);
+        let frameHandle: number | null = null;
+        let startTime: number;
+        function animationStep(time: number) {
+          // console.log("animationStep", time);
+          if (!IsRunning()) return resolve();
 
-        if (!startTime) startTime = time;
-        const timeDiff = time - startTime;
-        if (timeDiff > duration) {
-          if (frameHandle) {
-            cancelAnimationFrame(frameHandle);
-            frameHandle = null;
+          if (!startTime) startTime = time;
+          const timeDiff = time - startTime;
+          if (timeDiff > duration) {
+            if (frameHandle) {
+              cancelAnimationFrame(frameHandle);
+              frameHandle = null;
+            }
+            // console.log("ANIMATION FINISHED");
+            animatedElements.forEach((animatedItem) => {
+              // fix bug z-index
+              animatedItem.element.style.zIndex = "1";
+
+              if (animatedItem.type === CHANGE_TYPE.REMOVE)
+                container.value!.removeChild(animatedItem.element);
+            });
+            return resolve();
           }
-          // console.log("ANIMATION FINISHED");
+
+          frameHandle = requestAnimationFrame(animationStep);
+
+          const t = Math.min(1, timeDiff / duration);
+          let progress = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
+          if (isNaN(progress) || progress > 0.99) progress = 1;
+
           animatedElements.forEach((animatedItem) => {
             // fix bug z-index
-            animatedItem.element.style.zIndex = "1";
+            animatedItem.element.style.zIndex = "10";
 
-            if (animatedItem.type === CHANGE_TYPE.REMOVE)
-              container.value!.removeChild(animatedItem.element);
-          });
-          return resolve();
-        }
-
-        frameHandle = requestAnimationFrame(animationStep);
-
-        const t = Math.min(1, timeDiff / duration);
-        let progress = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
-        if (isNaN(progress) || progress > 0.99) progress = 1;
-
-        animatedElements.forEach((animatedItem) => {
-          // fix bug z-index
-          animatedItem.element.style.zIndex = "10";
-
-          switch (animatedItem.type) {
-            case CHANGE_TYPE.MOVE:
-              animatedItem.element.style.transform = `translate(${
-                animatedItem.atPoint!.x +
-                (animatedItem.toPoint!.x - animatedItem.atPoint!.x) * progress
-              }%,
+            switch (animatedItem.type) {
+              case CHANGE_TYPE.MOVE:
+                animatedItem.element.style.transform = `translate(${
+                  animatedItem.atPoint!.x +
+                  (animatedItem.toPoint!.x - animatedItem.atPoint!.x) * progress
+                }%,
                 ${
                   animatedItem.atPoint!.y +
                   (animatedItem.toPoint!.y - animatedItem.atPoint!.y) * progress
                 }%`;
-              break;
-            case CHANGE_TYPE.ADD:
-              animatedItem.element.style.opacity = (Math.round(progress * 100) / 100).toString();
-              break;
-            case CHANGE_TYPE.REMOVE:
-              animatedItem.element.style.opacity = (
-                Math.round((1 - progress) * 100) / 100
-              ).toString();
+                break;
+              case CHANGE_TYPE.ADD:
+                animatedItem.element.style.opacity = (Math.round(progress * 100) / 100).toString();
+                break;
+              case CHANGE_TYPE.REMOVE:
+                animatedItem.element.style.opacity = (
+                  Math.round((1 - progress) * 100) / 100
+                ).toString();
 
-              break;
-          }
-        });
-      }
-      // if (frameHandle) cancelAnimationFrame(frameHandle);
-      frameHandle = requestAnimationFrame(animationStep);
+                break;
+            }
+          });
+        }
+        frameHandle = requestAnimationFrame(animationStep);
+      });
     });
+    run();
+    return task;
   }
 
   async function movePiece(from: Point, to: Point, animate = false) {
@@ -300,5 +306,10 @@ export function usePieces(
     squares = newSquares;
     return redraw(newSquares);
   }
-  return { redraw, getPieceByIndex, getPieceByPoint, movePiece, setAlphaPiece };
+
+  function terminate() {
+    clear();
+  }
+
+  return { redraw, getPieceByIndex, getPieceByPoint, movePiece, setAlphaPiece, terminate };
 }

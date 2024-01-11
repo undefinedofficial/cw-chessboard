@@ -36,7 +36,7 @@
 
 <script lang="ts" setup>
 import "./style/main.scss";
-import { ref, computed, toRef, provide, onMounted } from "vue";
+import { ref, computed, toRef, provide, onMounted, onUnmounted } from "vue";
 
 import type { ChessboardProps } from "./types";
 import { useRescale } from "./hooks/rescale";
@@ -91,6 +91,7 @@ provide("boardSet", boardSet);
 provide("pieceSet", pieceSet);
 
 onMounted(() => emit("ready"));
+onUnmounted(() => pieces.terminate());
 
 defineExpose({
   boardSize: size,
