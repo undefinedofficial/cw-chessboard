@@ -5,7 +5,7 @@ export function useRescale(
   element: MaybeRefOrGetter<HTMLElement | null>,
   mode: MaybeRefOrGetter<ChessboardResize>
 ) {
-  const size = ref<number>(1024);
+  const size = ref<number>(0);
 
   let hScale: any;
   function Rescale() {
