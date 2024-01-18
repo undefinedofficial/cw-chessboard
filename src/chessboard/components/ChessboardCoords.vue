@@ -81,7 +81,7 @@ const isRight = computed(() => props.coordMode === "right");
       left: auto;
       right: 2px;
       &.outside {
-        transform: translateX(140%);
+        transform: translateX(160%);
       }
     }
     &.coords-right.letters {

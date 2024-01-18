@@ -52,3 +52,15 @@ export interface ChessboardProps {
   pieceSet?: string;
   resize?: ChessboardResize;
 }
+
+export interface PieceMove {
+  square: string;
+  color: Color;
+  name: PieceSymbol;
+}
+
+export interface ChangeEvent {
+  from: string;
+  to?: string;
+  piece: string;
+}

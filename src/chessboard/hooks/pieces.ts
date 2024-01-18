@@ -1,6 +1,6 @@
 import { type Ref, watch, onMounted } from "vue";
 import { indexToPoint, stringToFen, type SquareType, pointToIndex } from "./fen";
-import type { Color, PieceSymbol, Point } from "../types";
+import type { Color, ChangeEvent, PieceSymbol, Point } from "../types";
 import { invertPoint, squareToString } from "../utils/point";
 import { useQueue } from "./queue";
 
@@ -104,13 +104,23 @@ interface PieceSquare {
   color: Color;
 }
 
-export function usePieces(
-  container: Ref<HTMLElement | null>,
-  fen: Ref<string>,
-  orientation: Ref<Color>,
-  duration: Ref<number>,
-  alphaPiece: Ref<boolean>
-) {
+interface UsePiecesOptions {
+  container: Ref<HTMLElement | null>;
+  fen: Ref<string>;
+  orientation: Ref<Color>;
+  duration: Ref<number>;
+  alphaPiece: Ref<boolean>;
+  onChange?: (moves: ChangeEvent[]) => void;
+}
+
+export function usePieces({
+  fen,
+  orientation,
+  duration,
+  container,
+  alphaPiece,
+  onChange,
+}: UsePiecesOptions) {
   let squares: SquareType[] = [];
   const getPieceByIndex = (idx: number): null | PieceSquare => {
     const square = squares[idx];
@@ -176,8 +186,6 @@ export function usePieces(
       runAnimate([], squares, duration.value).then(() => redraw(squares))
     )
   );
-  onMounted(redraw);
-
   function createAnimation(fromSquares: SquareType[], toSquares: SquareType[]) {
     const changes = seekChanges(fromSquares, toSquares);
     const animatedElements: AnimatedElement[] = [];
@@ -219,76 +227,92 @@ export function usePieces(
           break;
       }
     });
+    if (onChange)
+      onChange(
+        changes.map(({ piece, type, atIndex, toIndex }) =>
+          type === CHANGE_TYPE.MOVE
+            ? {
+                piece,
+                from: squareToString(indexToPoint(atIndex)),
+                to: squareToString(indexToPoint(toIndex)),
+              }
+            : { piece, from: squareToString(indexToPoint(atIndex)) }
+        )
+      );
+
     return animatedElements;
   }
 
   const { IsRunning, addTask, clear, run } = useQueue();
 
   async function runAnimate(fromSquares: SquareType[], toSquares: SquareType[], duration: number) {
-    const task = addTask(() => {
-      return new Promise<void>((resolve) => {
-        const animatedElements = createAnimation(fromSquares, toSquares);
+    const task = addTask(
+      () =>
+        new Promise<void>((resolve) => {
+          const animatedElements = createAnimation(fromSquares, toSquares);
 
-        let frameHandle: number | null = null;
-        let startTime: number;
-        function animationStep(time: number) {
-          // console.log("animationStep", time);
-          if (!IsRunning()) return resolve();
+          let frameHandle: number | null = null;
+          let startTime: number;
+          function animationStep(time: number) {
+            // console.log("animationStep", time);
+            if (!IsRunning() || document.hidden) return resolve();
 
-          if (!startTime) startTime = time;
-          const timeDiff = time - startTime;
-          if (timeDiff > duration) {
-            if (frameHandle) {
-              cancelAnimationFrame(frameHandle);
-              frameHandle = null;
+            if (!startTime) startTime = time;
+            const timeDiff = time - startTime;
+            if (timeDiff > duration) {
+              if (frameHandle) {
+                cancelAnimationFrame(frameHandle);
+                frameHandle = null;
+              }
+              // console.log("ANIMATION FINISHED");
+              animatedElements.forEach((animatedItem) => {
+                // fix bug z-index
+                animatedItem.element.style.zIndex = "1";
+
+                if (animatedItem.type === CHANGE_TYPE.REMOVE)
+                  container.value!.removeChild(animatedItem.element);
+              });
+              return resolve();
             }
-            // console.log("ANIMATION FINISHED");
+
+            frameHandle = requestAnimationFrame(animationStep);
+
+            const t = Math.min(1, timeDiff / duration);
+            let progress = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
+            if (isNaN(progress) || progress > 0.99) progress = 1;
+
             animatedElements.forEach((animatedItem) => {
               // fix bug z-index
-              animatedItem.element.style.zIndex = "1";
+              animatedItem.element.style.zIndex = "10";
 
-              if (animatedItem.type === CHANGE_TYPE.REMOVE)
-                container.value!.removeChild(animatedItem.element);
-            });
-            return resolve();
-          }
-
-          frameHandle = requestAnimationFrame(animationStep);
-
-          const t = Math.min(1, timeDiff / duration);
-          let progress = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
-          if (isNaN(progress) || progress > 0.99) progress = 1;
-
-          animatedElements.forEach((animatedItem) => {
-            // fix bug z-index
-            animatedItem.element.style.zIndex = "10";
-
-            switch (animatedItem.type) {
-              case CHANGE_TYPE.MOVE:
-                animatedItem.element.style.transform = `translate(${
-                  animatedItem.atPoint!.x +
-                  (animatedItem.toPoint!.x - animatedItem.atPoint!.x) * progress
-                }%,
+              switch (animatedItem.type) {
+                case CHANGE_TYPE.MOVE:
+                  animatedItem.element.style.transform = `translate(${
+                    animatedItem.atPoint!.x +
+                    (animatedItem.toPoint!.x - animatedItem.atPoint!.x) * progress
+                  }%,
                 ${
                   animatedItem.atPoint!.y +
                   (animatedItem.toPoint!.y - animatedItem.atPoint!.y) * progress
                 }%`;
-                break;
-              case CHANGE_TYPE.ADD:
-                animatedItem.element.style.opacity = (Math.round(progress * 100) / 100).toString();
-                break;
-              case CHANGE_TYPE.REMOVE:
-                animatedItem.element.style.opacity = (
-                  Math.round((1 - progress) * 100) / 100
-                ).toString();
+                  break;
+                case CHANGE_TYPE.ADD:
+                  animatedItem.element.style.opacity = (
+                    Math.round(progress * 100) / 100
+                  ).toString();
+                  break;
+                case CHANGE_TYPE.REMOVE:
+                  animatedItem.element.style.opacity = (
+                    Math.round((1 - progress) * 100) / 100
+                  ).toString();
 
-                break;
-            }
-          });
-        }
-        frameHandle = requestAnimationFrame(animationStep);
-      });
-    });
+                  break;
+              }
+            });
+          }
+          frameHandle = requestAnimationFrame(animationStep);
+        })
+    );
     run();
     return task;
   }
@@ -310,6 +334,7 @@ export function usePieces(
   function terminate() {
     clear();
   }
+  onMounted(redraw);
 
   return { redraw, getPieceByIndex, getPieceByPoint, movePiece, setAlphaPiece, terminate };
 }

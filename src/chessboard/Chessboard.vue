@@ -38,7 +38,7 @@
 import "./style/main.scss";
 import { ref, computed, toRef, provide, onMounted, onUnmounted } from "vue";
 
-import type { ChessboardProps } from "./types";
+import type { ChessboardProps, ChangeEvent } from "./types";
 import { useRescale } from "./hooks/rescale";
 import { usePieces } from "./hooks/pieces";
 import ChessboardCoords from "./components/ChessboardCoords.vue";
@@ -58,6 +58,7 @@ const props = withDefaults(defineProps<ChessboardProps>(), {
 
 const emit = defineEmits<{
   ready: [];
+  moves: [moves: ChangeEvent[]];
 }>();
 const wrapper = ref<HTMLElement | null>(null);
 const chessboard = ref<HTMLElement | null>(null);
@@ -74,13 +75,16 @@ const fontScale = computed(() => `${props.fontSize * ratioSize.value}px`);
 
 const color = toRef(props, "orientation");
 const piecesContainer = ref<HTMLElement | null>(null);
-const pieces = usePieces(
-  piecesContainer,
-  toRef(props, "fen"),
-  color,
-  toRef(props, "duration"),
-  toRef(props, "alphaPiece")
-);
+const pieces = usePieces({
+  container: piecesContainer,
+  fen: toRef(props, "fen"),
+  orientation: color,
+  duration: toRef(props, "duration"),
+  alphaPiece: toRef(props, "alphaPiece"),
+  onChange(moves) {
+    emit("moves", moves);
+  },
+});
 
 const boardSet = toRef(props, "boardSet");
 const pieceSet = toRef(props, "pieceSet");
