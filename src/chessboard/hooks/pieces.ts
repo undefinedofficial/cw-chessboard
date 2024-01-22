@@ -338,3 +338,5 @@ export function usePieces({
 
   return { redraw, getPieceByIndex, getPieceByPoint, movePiece, setAlphaPiece, terminate };
 }
+
+export type UsePiecesReturn = ReturnType<typeof usePieces>;

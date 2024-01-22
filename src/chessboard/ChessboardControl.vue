@@ -12,18 +12,17 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, inject, type Ref, onMounted, onUnmounted, onBeforeUnmount } from "vue";
-import { usePieces } from "./hooks/pieces";
-
-import { getPointInElement } from "./utils/getPointInElement";
-import { pointEqual, pointToSquare, squareToString, squareValid } from "./utils/point";
-
+import { ref, inject, type Ref } from "vue";
 import type { Color, InputColor, Piece, Point } from "./types";
+import { pointEqual, pointToSquare, squareToString, squareValid } from "./utils/point";
+import type { UsePiecesReturn } from "./hooks/pieces";
+import { useControl } from "./hooks/control";
 
 const props = withDefaults(
   defineProps<{
     mode?: "auto" | "move" | "press";
     enableColor?: InputColor;
+    alignPiece?: boolean;
   }>(),
   {
     mode: "auto",
@@ -41,12 +40,12 @@ const emits = defineEmits<{
 const DRAGGING_SENSITIVE = 32;
 
 const chessboard = inject<Ref<HTMLDivElement>>("chessboard")!;
-const pieces = inject<ReturnType<typeof usePieces>>("pieces")!;
-const pieceSet = inject<string>("pieceSet")!;
+const pieces = inject<UsePiecesReturn>("pieces")!;
+const pieceSet = inject<Ref<string>>("pieceSet")!;
 const orientation = inject<Ref<Color>>("orientation")!;
 
 let fromSquare: Piece | null = null;
-const activePiece = ref<Pick<Piece, "x" | "y" | "name" | "color"> | null>(null);
+const activePiece = ref<Piece | null>(null);
 
 const isEnabledColor = (color: Color) => props.enableColor === "all" || props.enableColor === color;
 
@@ -81,137 +80,131 @@ function onCancelMove(from: Piece, emited = true) {
   fromSquare = null;
 }
 
-const onStart = (ev: PointerEvent) => {
-  //!  WARNING
-  // if (ev.doubleclick && fromSquare) {
-  //   onCancelMove(fromSquare!, true);
-  //   return true;
-  // }
-  // if (ev.button && ev.button !== MouseButton.LEFT) return true;
+useControl({
+  el: chessboard,
+  onStart: (point) => {
+    holdPress = false;
+    const square = pointToSquare(point, orientation.value, point);
 
-  holdPress = false;
+    if (!squareValid(square)) return false;
 
-  const point = getPointInElement(chessboard.value!, ev);
-  const square = pointToSquare(point, orientation.value, point);
+    if (fromSquare && pointEqual(fromSquare, square)) {
+      onCancelMove(fromSquare);
+      return false;
+    }
 
-  if (!squareValid(square)) return true;
+    const piece = pieces.getPieceByPoint(square);
+    // Click for selecting a chess piece
+    if (!piece || !isEnabledColor(piece.color)) return true;
 
-  if (fromSquare && pointEqual(fromSquare, square)) {
-    onCancelMove(fromSquare);
+    emits("beforeMove", squareToString(square), (done: boolean) => {
+      if (!done) return;
+
+      fromSquare = {
+        x: square.x,
+        y: square.y,
+        name: piece.name,
+        color: piece.color,
+      };
+      checkEnterSquare(pointToSquare(point, orientation.value, point));
+    });
     return true;
-  }
+  },
+  onMove: (point) => {
+    if (!fromSquare) return;
 
-  const piece = pieces.getPieceByPoint(square);
-  // Click for selecting a chess piece
-  if (!piece || !isEnabledColor(piece.color)) return;
+    const squareWidth = point.width / 8;
+    const squareHeight = point.height / 8;
 
-  emits("beforeMove", squareToString(square), (done: boolean) => {
-    if (!done) return;
+    const halfX = point.x - squareWidth / 2;
+    const halfY = point.y - squareHeight / 2;
 
-    fromSquare = {
-      x: square.x,
-      y: square.y,
-      name: piece.name,
-      color: piece.color,
-    };
-    checkEnterSquare(pointToSquare(point, orientation.value, point));
-  });
-};
-const onMove = (ev: PointerEvent) => {
-  if (!fromSquare || isRejectMove()) return;
+    const lastHoldPress = holdPress;
+    if (!holdPress) {
+      const alignX = fromSquare.x * squareWidth;
+      const alignY = fromSquare.y * squareHeight;
+      const offsetX = Math.abs(halfX - alignX);
+      const offsetY = Math.abs(halfY - alignY);
 
-  const point = getPointInElement(chessboard.value!, ev);
-  const squareWidth = point.width / 8;
-  const squareHeight = point.height / 8;
+      holdPress = offsetX > DRAGGING_SENSITIVE || offsetY > DRAGGING_SENSITIVE;
+      if (lastHoldPress !== holdPress) alphaPiece(fromSquare, holdPress);
+    }
 
-  const halfX = point.x - squareWidth / 2;
-  const halfY = point.y - squareHeight / 2;
+    if (holdPress && !isRejectMove()) {
+      activePiece.value = {
+        name: fromSquare.name,
+        color: fromSquare.color,
+        x: halfX,
+        y: halfY,
+      };
+    } else {
+      const alignX = fromSquare.x * squareWidth;
+      const alignY = fromSquare.y * squareHeight;
+      activePiece.value = {
+        name: fromSquare.name,
+        color: fromSquare.color,
+        x: alignX,
+        y: alignY,
+      };
+    }
+    if (isRejectMove()) return;
 
-  if (!holdPress && activePiece.value) {
-    const alignX = fromSquare.x * squareWidth;
-    const alignY = fromSquare.y * squareHeight;
-    const offsetX = Math.abs(halfX - alignX);
-    const offsetY = Math.abs(halfY - alignY);
+    if (props.alignPiece && activePiece.value) {
+      const square = pointToSquare(point, orientation.value, point);
+      const alignX = square.x * squareWidth;
+      const alignY = square.y * squareHeight;
+      activePiece.value.x = alignX;
+      activePiece.value.y = alignY;
+    }
 
-    holdPress = offsetX > DRAGGING_SENSITIVE || offsetY > DRAGGING_SENSITIVE;
-    alphaPiece(fromSquare, holdPress);
-  }
+    const square = pointToSquare(point, orientation.value, point);
+    if (!squareValid(square)) return;
+    checkEnterSquare(square);
+  },
+  onEnd: (point) => {
+    if (isRejectMove()) {
+      if (fromSquare) onCancelMove(fromSquare);
+      return;
+    }
 
-  activePiece.value = {
-    name: fromSquare.name,
-    color: fromSquare.color,
-    x: halfX,
-    y: halfY,
-  };
+    const square = pointToSquare(point, orientation.value, point);
 
-  const square = pointToSquare(point, orientation.value, point);
-  if (!squareValid(square)) return;
-  checkEnterSquare(square);
-};
-const onEnd = (ev: PointerEvent) => {
-  if (isRejectMove()) return;
+    if (!squareValid(square)) {
+      console.log("Invalid square", fromSquare);
 
-  const point = getPointInElement(chessboard.value!, ev);
-  const square = pointToSquare(point, orientation.value, point);
+      if (fromSquare) onCancelMove(fromSquare);
+      return;
+    }
+    activePiece.value = null;
+    if (holdPress && fromSquare && pointEqual(fromSquare, square)) {
+      onCancelMove(fromSquare);
+      return;
+    }
 
-  if (!squareValid(square)) {
-    console.log("Invalid square", fromSquare);
+    // Click for moving selected a chess piece
+    const piece = pieces.getPieceByPoint(square);
 
-    if (fromSquare) onCancelMove(fromSquare);
-    return;
-  }
-  // if (activePiece.value) {
-  // For alignment by center on click not dragging
-  // const alignCoord = squareToPoint(normalizePoint(point, point), point);
-  // activePiece.value.x = alignCoord.x - 1;
-  // activePiece.value.y = alignCoord.y - 1;
-  // }
-  activePiece.value = null;
-  if (holdPress && fromSquare && pointEqual(fromSquare, square)) {
-    onCancelMove(fromSquare);
-    return;
-  }
+    if (!fromSquare || (piece && piece.color === fromSquare.color && !holdPress)) return;
 
-  // Click for moving selected a chess piece
-  const piece = pieces.getPieceByPoint(square);
+    emits(
+      "afterMove",
+      squareToString(fromSquare),
+      squareToString(square),
+      async (done: boolean) => {
+        if (!fromSquare) return console.warn("Cannot move from square ");
 
-  if (!fromSquare || (piece && piece.color === fromSquare.color && !holdPress)) return;
+        // save the current position of the current piece in the current square before remove
+        const from = fromSquare;
+        // done is true if the move was successful and not emit cancel event else emit cancel event
+        onCancelMove(from, !done);
 
-  emits("afterMove", squareToString(fromSquare), squareToString(square), async (done: boolean) => {
-    if (!fromSquare) return console.warn("Cannot move from square ");
-
-    // save the current position of the current piece in the current square before remove
-    const from = fromSquare;
-    // done is true if the move was successful and not emit cancel event else emit cancel event
-    onCancelMove(from, !done);
-
-    if (done) await pieces.movePiece(from, square, !holdPress);
-  });
-};
-
-const onSquarePointerDown = (ev: PointerEvent) => {
-  ev.preventDefault();
-  if (!ev.isPrimary) return;
-
-  if (onStart(ev)) return;
-
-  const onSquarePointerUp = (ev: PointerEvent) => {
-    document.removeEventListener("pointermove", onMove);
-    document.removeEventListener("pointerup", onSquarePointerUp);
-    onEnd(ev);
-  };
-  document.addEventListener("pointermove", onMove);
-  document.addEventListener("pointerup", onSquarePointerUp);
-};
-
-onMounted(() => {
-  if (!chessboard.value) return console.warn("Chessboard not found");
-  chessboard.value.style.touchAction = "none";
-  chessboard.value.addEventListener("pointerdown", onSquarePointerDown);
-});
-onBeforeUnmount(() => {
-  chessboard.value.style.touchAction = "auto";
-  chessboard.value.removeEventListener("pointerdown", onSquarePointerDown);
+        if (done) await pieces.movePiece(from, square, !holdPress);
+      }
+    );
+  },
+  onCancel: () => {
+    if (fromSquare) onCancelMove(fromSquare, true);
+  },
 });
 </script>
 
