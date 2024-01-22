@@ -99,6 +99,7 @@ onUnmounted(() => pieces.terminate());
 defineExpose({
   boardSize: size,
   Rescale,
+  pieces,
 });
 </script>
 
