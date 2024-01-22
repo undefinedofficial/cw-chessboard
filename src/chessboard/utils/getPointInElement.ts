@@ -1,6 +1,6 @@
-import type { Point } from "../types";
+import type { Point, Rectangle } from "../types";
 
-export function getPointInElement(el: HTMLElement, { x, y }: Point) {
+export function getPointInElement(el: HTMLElement, { x, y }: Point): Rectangle {
   const rect = el.getBoundingClientRect();
   return {
     x: x - rect.left,

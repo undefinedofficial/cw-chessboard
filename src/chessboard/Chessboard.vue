@@ -36,12 +36,11 @@
 
 <script lang="ts" setup>
 import "./style/main.scss";
-import { ref, computed, toRef, provide, onMounted, onUnmounted } from "vue";
-
 import type { ChessboardProps, ChangeEvent } from "./types";
+import { ref, computed, toRef, provide, onMounted, onUnmounted } from "vue";
+import ChessboardCoords from "./components/ChessboardCoords.vue";
 import { useRescale } from "./hooks/rescale";
 import { usePieces } from "./hooks/pieces";
-import ChessboardCoords from "./components/ChessboardCoords.vue";
 
 const props = withDefaults(defineProps<ChessboardProps>(), {
   fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ",
