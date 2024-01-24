@@ -4,6 +4,34 @@
 
 Библиотека имеет с коробки 4 базовых компонента и 6 хуков для создания дополнительных плагинов(Улучшений) под конктретные задачи.
 
+## Установка
+
+```
+npm install --save --legacy-peer-deps
+```
+
+```
+yarn
+```
+
+```
+pnpm install
+```
+
+## Добавление в проект
+
+```
+npm install --save https://github.com/undefinedofficial/cw-chessboard.git
+```
+
+```
+yarn add https://github.com/undefinedofficial/cw-chessboard.git
+```
+
+```
+pnpm add https://github.com/undefinedofficial/cw-chessboard.git
+```
+
 ## Компоненты:
 
 1. **Chessboard** - Главный компонент отвечающий за отображение доски и фигур, а так-же отслеживает все изменения на доске анимируя при возможности.
