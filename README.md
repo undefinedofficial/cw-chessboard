@@ -140,7 +140,6 @@ pnpm add https://github.com/undefinedofficial/cw-chessboard.git
    | color?   | "red"-"green"-"blue" | цвет маркера (при необходимости) |
    | type     |     MARKER.ARROW     |           тип маркера            |
    | toSquare |        string        |           координаты в           |
-
 3. **ChessboardControl** - Вложеный компонент отвечающий за взаимодействие с фигурами.
 
    | Атрибуты | Тип | описание | знач. по умолчанию |

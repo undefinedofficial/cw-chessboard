@@ -12,6 +12,7 @@
       :alphaPiece="alphaPiece"
       :boardSet="boardSet"
       :pieceSet="piecesSet"
+      :resize="true"
     >
       <ChessboardMarkers :markers="markers" />
       <ChessboardControl
@@ -192,10 +193,10 @@ import ControlRange from "./ControlRange.vue";
 
 let chess = new Chess();
 const boards = ["default", "blue", "green", "sport", "wood_light"]; // "wood_light"],
-const pieces = ["default", "staunty", "stock"];
+const pieces = ["default", "grady", "staunty", "stock"];
 
 const boardSet = ref("default");
-const piecesSet = ref("staunty");
+const piecesSet = ref("grady");
 
 const turn = ref<InputColor>("w");
 const fen = ref(chess.fen());

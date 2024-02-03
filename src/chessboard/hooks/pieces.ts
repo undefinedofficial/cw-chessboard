@@ -245,10 +245,16 @@ export function usePieces({
 
   const { IsRunning, addTask, clear, run } = useQueue();
 
-  async function runAnimate(fromSquares: SquareType[], toSquares: SquareType[], duration: number) {
-    const task = addTask(
+  async function runAnimate(
+    fromSquares: SquareType[],
+    toSquares: SquareType[],
+    duration: number
+  ): Promise<void> {
+    const task = addTask<void>(
       () =>
         new Promise<void>((resolve) => {
+          if (document.hasFocus?.() === false) return resolve();
+
           const animatedElements = createAnimation(fromSquares, toSquares);
 
           let frameHandle: number | null = null;
