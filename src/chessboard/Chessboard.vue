@@ -45,11 +45,11 @@ import { usePieces } from "./hooks/pieces";
 const props = withDefaults(defineProps<ChessboardProps>(), {
   fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ",
   orientation: "w",
-  duration: 300,
   borderSize: 12,
   roundSize: 0,
   fontSize: 24,
   coordMode: "left",
+  duration: 300,
   boardSet: "default",
   pieceSet: "default",
   resize: true,
