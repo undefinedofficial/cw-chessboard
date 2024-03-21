@@ -1,61 +1,14 @@
 <template>
-  <!-- <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 1024 1024"
-    width="100%"
-    height="100%"
-    class="markers"
-  >
-    <g class="marker">
-      <template v-for="marker of markers" :key="marker.id">
-        <template v-if="marker.type === MARKER.NONE"></template>
-        <g
-          v-else-if="marker.type === MARKER.TEXT"
-          :transform="`translate(${squareJoinNS(
-            squareToPointNS(invertPoint(stringToSquare(marker.square), orientation))
-          )})`"
-        >
-          <text
-            class="marker-text"
-            :class="marker.color || 'default'"
-            :transform="`scale(3.2) translate(20, 26)`"
-            text-anchor="middle"
-            fill="black"
-            stroke="black"
-            :font-size="(marker.size || 5) + 10"
-          >
-            {{ marker.text }}
-          </text>
-        </g>
-        <ArrowMarker
-          v-else-if="marker.type === MARKER.ARROW"
-          :pack="markerSet"
-          :from="invertPoint(stringToSquare(marker.square), orientation)"
-          :to="invertPoint(stringToSquare(marker.toSquare), orientation)"
-          :color="marker.color || 'default'"
-          :size="marker.size || 2"
-        />
-        <g
-          v-else
-          :transform="`translate(${squareJoinNS(
-            squareToPointNS(invertPoint(stringToSquare(marker.square), orientation))
-          )})`"
-        >
-          <use
-            :href="`#${markerSet}-${marker.type}`"
-            :class="[marker.type, marker.color || 'default']"
-            :transform="`scale(3.2)`"
-          />
-        </g>
-      </template>
-    </g>
-  </svg> -->
   <div class="markers">
     <template v-for="(marker, i) of markers" :key="marker.id || i">
       <ChessboardSquare v-if="marker.type === MARKER.DOT" class="marker" :square="marker.square">
         <div class="marker-dot" :class="marker.color || 'default'"></div>
       </ChessboardSquare>
-      <ChessboardSquare v-if="marker.type === MARKER.FRAME" class="marker" :square="marker.square">
+      <ChessboardSquare
+        v-else-if="marker.type === MARKER.FRAME"
+        class="marker"
+        :square="marker.square"
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="marker-frame"
@@ -113,7 +66,6 @@
       >
         <div class="marker-text" :class="marker.color || 'default'">{{ marker.text }}</div>
       </ChessboardSquare>
-
       <ArrowMarker
         v-else-if="marker.type === MARKER.ARROW"
         class="marker"
