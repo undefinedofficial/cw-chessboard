@@ -14,7 +14,13 @@
       :pieceSet="piecesSet"
       :resize="true"
     >
-      <ChessboardMarkers :markers="markers" />
+      <ChessboardMarkers :markers="markers" :markerSet="markerPack" />
+      <ChessboardSquare
+        class="flex justify-center items-center overflow-hidden text-sm"
+        square="c5"
+      >
+        square
+      </ChessboardSquare>
       <ChessboardControl
         v-if="!viewonly"
         :enableColor="turn"
@@ -29,154 +35,176 @@
     </Chessboard>
   </div>
   <div class="chessboard-config">
-    <ControlRadio
-      title="move mode"
-      name="moveMode"
-      v-model="moveMode"
-      :items="['move', 'press', 'auto']"
-    />
-    <ControlRadio title="move turn" name="turn" v-model="turn" :items="['none', 'w', 'b', 'all']" />
-    <ControlRadio
-      title="coord mode"
-      name="coordMode"
-      :items="['none', 'left', 'right']"
-      v-model="coordMode"
-    />
-    <ControlRadio
-      title="orientation"
-      name="orientation"
-      :items="['w', 'b']"
-      v-model="orientation"
-    />
-    <div>
-      board pack
-      <select class="px-4 py-1.5 text-black rounded-md" v-model="boardSet">
-        <option v-for="th in boards" :value="th">{{ th }}</option>
-      </select>
-    </div>
-    <div>
-      pieces pack
-      <select class="px-4 py-1.5 text-black rounded-md" v-model="piecesSet">
-        <option v-for="th in pieces" :value="th">{{ th }}</option>
-      </select>
-    </div>
-    <div class="space-x-4">
-      fens
-      <input type="radio" name="fen" v-model="fen" value="8/8/8/8/8/8/8/8" />
-      <input
-        type="radio"
-        name="fen"
-        v-model="fenProxy"
-        value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    <div class="flex flex-col w-full h-full space-y-3">
+      <ControlRadio
+        title="move mode"
+        name="moveMode"
+        v-model="moveMode"
+        :items="['move', 'press', 'auto']"
       />
-      <input
-        type="radio"
-        name="fen"
-        v-model="fenProxy"
-        value="rnbqkbnr/pp3ppp/4p3/2pp4/2PP4/2N5/PP2PPPP/R1BQKBNR w KQkq - 0 1"
+      <ControlRadio
+        title="move turn"
+        name="turn"
+        v-model="turn"
+        :items="['none', 'w', 'b', 'all']"
       />
-      <input
-        type="radio"
-        name="fen"
-        v-model="fenProxy"
-        value="rn2kbnr/ppp1pppp/3q4/3p1b1Q/4P3/3B4/PPPP1PPP/RNB1K1NR w KQkq - 0 1"
+      <ControlRadio
+        title="coord mode"
+        name="coordMode"
+        :items="['none', 'left', 'right']"
+        v-model="coordMode"
       />
-    </div>
+      <ControlRadio
+        title="orientation"
+        name="orientation"
+        :items="['w', 'b']"
+        v-model="orientation"
+      />
+      <div>
+        board pack
+        <select class="px-4 py-1.5 text-black rounded-md" v-model="boardSet">
+          <option v-for="th in boards" :value="th">{{ th }}</option>
+        </select>
+      </div>
+      <div>
+        pieces pack
+        <select class="px-4 py-1.5 text-black rounded-md" v-model="piecesSet">
+          <option v-for="th in pieces" :value="th">{{ th }}</option>
+        </select>
+      </div>
+      <div class="space-x-4">
+        fens
+        <input type="radio" name="fen" v-model="fen" value="8/8/8/8/8/8/8/8" />
+        <input
+          type="radio"
+          name="fen"
+          v-model="fenProxy"
+          value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        />
+        <input
+          type="radio"
+          name="fen"
+          v-model="fenProxy"
+          value="rnbqkbnr/pp3ppp/4p3/2pp4/2PP4/2N5/PP2PPPP/R1BQKBNR w KQkq - 0 1"
+        />
+        <input
+          type="radio"
+          name="fen"
+          v-model="fenProxy"
+          value="rn2kbnr/ppp1pppp/3q4/3p1b1Q/4P3/3B4/PPPP1PPP/RNB1K1NR w KQkq - 0 1"
+        />
+      </div>
 
-    <ControlRange
-      title="border size"
-      name="border"
-      v-model="borderSize"
-      suffix="fr"
-      min="0"
-      max="100"
-    />
-    <ControlRange
-      title="round size"
-      name="roundSize"
-      v-model="roundSize"
-      suffix="fr"
-      min="0"
-      max="100"
-    />
-    <ControlRange
-      title="font size"
-      name="fontSize"
-      v-model="fontSize"
-      suffix="fr"
-      min="0"
-      max="100"
-    />
-    <ControlRange
-      title="animation duration"
-      name="duration"
-      v-model="duration"
-      suffix="ms"
-      min="0"
-      max="1000"
-    />
+      <ControlRange
+        title="border size"
+        name="border"
+        v-model="borderSize"
+        suffix="fr"
+        min="0"
+        max="100"
+      />
+      <ControlRange
+        title="round size"
+        name="roundSize"
+        v-model="roundSize"
+        suffix="fr"
+        min="0"
+        max="100"
+      />
+      <ControlRange
+        title="font size"
+        name="fontSize"
+        v-model="fontSize"
+        suffix="fr"
+        min="0"
+        max="100"
+      />
+      <ControlRange
+        title="animation duration"
+        name="duration"
+        v-model="duration"
+        suffix="ms"
+        min="0"
+        max="1000"
+      />
 
-    <div class="flex items-center ps-3">
-      <input
-        id="coordOutside"
-        type="checkbox"
-        v-model="coordOutside"
-        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+      <div class="flex items-center ps-3">
+        <input
+          id="coordOutside"
+          type="checkbox"
+          v-model="coordOutside"
+          class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+        />
+        <label
+          for="coordOutside"
+          class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+        >
+          coord outside
+        </label>
+      </div>
+      <div class="flex items-center ps-3">
+        <input
+          id="viewonly"
+          type="checkbox"
+          v-model="viewonly"
+          class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+        />
+        <label
+          for="viewonly"
+          class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+        >
+          viewonly
+        </label>
+      </div>
+      <div class="flex items-center ps-3">
+        <input
+          id="alphaPiece"
+          type="checkbox"
+          v-model="alphaPiece"
+          class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+        />
+        <label
+          for="alphaPiece"
+          class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+        >
+          alpha piece
+        </label>
+      </div>
+      <div class="flex items-center ps-3">
+        <input
+          id="alignPiece"
+          type="checkbox"
+          v-model="alignPiece"
+          class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+        />
+        <label
+          for="alignPiece"
+          class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+        >
+          align piece
+        </label>
+      </div>
+
+      <div>
+        markers pack
+        <select class="px-4 py-1.5 text-black rounded-md" v-model="markerPack">
+          <option v-for="th in markersPacks" :value="th">{{ th }}</option>
+        </select>
+      </div>
+      <ControlRange
+        title="markers size"
+        name="markerSize"
+        v-model="markerSize"
+        suffix=""
+        min="0"
+        max="9"
       />
-      <label
-        for="coordOutside"
-        class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-      >
-        coord outside
-      </label>
-    </div>
-    <div class="flex items-center ps-3">
-      <input
-        id="viewonly"
-        type="checkbox"
-        v-model="viewonly"
-        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
-      />
-      <label
-        for="viewonly"
-        class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-      >
-        viewonly
-      </label>
-    </div>
-    <div class="flex items-center ps-3">
-      <input
-        id="alphaPiece"
-        type="checkbox"
-        v-model="alphaPiece"
-        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
-      />
-      <label
-        for="alphaPiece"
-        class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-      >
-        alpha piece
-      </label>
-    </div>
-    <div class="flex items-center ps-3">
-      <input
-        id="alignPiece"
-        type="checkbox"
-        v-model="alignPiece"
-        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
-      />
-      <label
-        for="alignPiece"
-        class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-      >
-        align piece
-      </label>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Chess } from "chess.ts";
 
 import {
@@ -187,6 +215,7 @@ import {
   Chessboard,
   ChessboardMarkers,
   ChessboardControl,
+  ChessboardSquare,
 } from "cw-chessboard/index";
 import ControlRadio from "./ControlRadio.vue";
 import ControlRange from "./ControlRange.vue";
@@ -197,6 +226,9 @@ const pieces = ["default", "grady", "staunty", "stock"];
 
 const boardSet = ref("default");
 const piecesSet = ref("grady");
+
+const markersPacks = ["default", "strict"];
+const markerPack = ref<"default" | "strict">("default");
 
 const turn = ref<InputColor>("w");
 const fen = ref(chess.fen());
@@ -222,7 +254,7 @@ const viewonly = ref(false);
 const alignPiece = ref(false);
 
 const markers = ref<(Marker & { id?: string })[]>([
-  { type: MARKER.FRAME, color: "red", square: "a4" },
+  { type: MARKER.FRAME, color: "red", square: "a4", size: 3 },
   { type: MARKER.DOT, color: "green", square: "a5" },
   { type: MARKER.DOT, color: "red", square: "a6" },
   { type: MARKER.CIRCLE, color: "blue", square: "a3" },
@@ -230,6 +262,15 @@ const markers = ref<(Marker & { id?: string })[]>([
   { type: MARKER.TEXT, square: "b5", text: "1.0" },
   { type: MARKER.ARROW, color: "blue", square: "b3", toSquare: "b4" },
 ]);
+
+const markerSize = ref(0);
+watch(
+  markerSize,
+  () => {
+    markers.value = markers.value.map((m) => ({ ...m, size: markerSize.value }));
+  },
+  { immediate: true }
+);
 
 const selectMarkers = (
   id: string,
@@ -239,7 +280,9 @@ const selectMarkers = (
 ): void => {
   markers.value = markers.value.filter((m) => m.id !== id);
   if (squares)
-    squares.forEach((square) => markers.value.push({ id, type: marker!, square, color }));
+    squares.forEach((square) =>
+      markers.value.push({ id, type: marker!, square, color, size: markerSize.value })
+    );
 };
 
 const onBeforeMove = (square: string, done: (accept: boolean) => void) => {
@@ -302,12 +345,9 @@ body,
   margin: 0;
   padding: 0;
   display: flex;
-  /* justify-content: center; */
-  /* align-items: center; */
 }
 
 .chessboard-preview {
-  /* margin: 50px; */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -316,6 +356,8 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
+
+  @apply mx-5;
 }
 
 .chessboard-config {
@@ -327,7 +369,8 @@ body,
   width: 320px;
   min-width: 320px;
   max-width: 320px;
+  overflow: auto;
 
-  @apply space-y-5;
+  @apply m-5;
 }
 </style>
