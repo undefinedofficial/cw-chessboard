@@ -14,7 +14,13 @@
 <script lang="ts" setup>
 import { ref, inject, type Ref } from "vue";
 import type { Color, InputColor, Piece, Point } from "./types";
-import { pointEqual, pointToSquare, squareToString, squareValid } from "./utils/point";
+import {
+  normalizePoint,
+  pointEqual,
+  pointToSquare,
+  squareToString,
+  squareValid,
+} from "./utils/point";
 import type { UsePiecesReturn } from "./hooks/pieces";
 import { useControl } from "./hooks/control";
 
@@ -149,7 +155,7 @@ useControl({
     if (isRejectMove()) return;
 
     if (props.alignPiece && activePiece.value) {
-      const square = pointToSquare(point, orientation.value, point);
+      const square = normalizePoint(point, point);
       const alignX = square.x * squareWidth;
       const alignY = square.y * squareHeight;
       activePiece.value.x = alignX;
