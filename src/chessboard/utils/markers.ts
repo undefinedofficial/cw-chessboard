@@ -9,6 +9,7 @@ export const enum MARKER {
 }
 
 interface IMarker {
+  id?: string;
   square: string;
   color?: "red" | "green" | "blue";
 }
@@ -23,6 +24,7 @@ export interface MarkerText extends IMarker {
 export interface MarkerArrow extends IMarker {
   type: MARKER.ARROW;
   toSquare: string;
+  size?: number;
 }
 
 export type Marker = MarkerPoint | MarkerText | MarkerArrow;

@@ -14,10 +14,10 @@
       :pieceSet="piecesSet"
       :resize="true"
     >
-      <ChessboardMarkers :markers="markers" :markerSet="markerPack" />
+      <ChessboardMarkers :markers="markers" />
       <ChessboardSquare
-        class="flex justify-center items-center overflow-hidden text-sm"
         square="c5"
+        class="flex justify-center items-center overflow-hidden text-sm"
       >
         square
       </ChessboardSquare>
@@ -185,12 +185,6 @@
         </label>
       </div>
 
-      <div>
-        markers pack
-        <select class="px-4 py-1.5 text-black rounded-md" v-model="markerPack">
-          <option v-for="th in markersPacks" :value="th">{{ th }}</option>
-        </select>
-      </div>
       <ControlRange
         title="markers size"
         name="markerSize"
@@ -227,9 +221,6 @@ const pieces = ["default", "grady", "staunty", "stock"];
 const boardSet = ref("default");
 const piecesSet = ref("grady");
 
-const markersPacks = ["default", "strict"];
-const markerPack = ref<"default" | "strict">("default");
-
 const turn = ref<InputColor>("w");
 const fen = ref(chess.fen());
 
@@ -254,7 +245,7 @@ const viewonly = ref(false);
 const alignPiece = ref(false);
 
 const markers = ref<(Marker & { id?: string })[]>([
-  { type: MARKER.FRAME, color: "red", square: "a4", size: 3 },
+  { type: MARKER.FRAME, color: "red", square: "a4" },
   { type: MARKER.DOT, color: "green", square: "a5" },
   { type: MARKER.DOT, color: "red", square: "a6" },
   { type: MARKER.CIRCLE, color: "blue", square: "a3" },
@@ -345,6 +336,7 @@ body,
   margin: 0;
   padding: 0;
   display: flex;
+  overflow: hidden;
 }
 
 .chessboard-preview {

@@ -69,18 +69,30 @@
         .default {
           stroke: $default;
           fill: $default;
+          background: $default;
+          border-color: $default;
+          color: $default;
         }
         .red {
           stroke: $red;
           fill: $red;
+          background: $red;
+          border-color: $red;
+          color: $red;
         }
         .green {
           stroke: $green;
           fill: $green;
+          background: $green;
+          border-color: $green;
+          color: $green;
         }
         .blue {
           stroke: $blue;
           fill: $blue;
+          background: $blue;
+          border-color: $blue;
+          color: $blue;
         }
       }
     }
