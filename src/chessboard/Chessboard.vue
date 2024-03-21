@@ -163,6 +163,7 @@ defineExpose({
         width: 100%;
         height: 100%;
         transition: none !important;
+        z-index: 5;
         .piece {
           position: absolute;
           display: block;

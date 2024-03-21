@@ -47,6 +47,7 @@ const isRight = computed(() => props.coordMode === "right");
   right: 0;
   top: 0;
   bottom: 0;
+  z-index: 10;
   .coords {
     pointer-events: none;
     position: absolute;

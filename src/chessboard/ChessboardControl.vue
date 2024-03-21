@@ -18,17 +18,16 @@ import { pointEqual, pointToSquare, squareToString, squareValid } from "./utils/
 import type { UsePiecesReturn } from "./hooks/pieces";
 import { useControl } from "./hooks/control";
 
-const props = withDefaults(
-  defineProps<{
-    mode?: "auto" | "move" | "press";
-    enableColor?: InputColor;
-    alignPiece?: boolean;
-  }>(),
-  {
-    mode: "auto",
-    enableColor: "all",
-  }
-);
+export interface ChessboardControlProps {
+  mode?: "auto" | "move" | "press";
+  enableColor?: InputColor;
+  alignPiece?: boolean;
+}
+
+const props = withDefaults(defineProps<ChessboardControlProps>(), {
+  mode: "auto",
+  enableColor: "all",
+});
 const emits = defineEmits<{
   beforeMove: [square: string, done: (is: boolean) => any];
   afterMove: [fromSquare: string, toSquare: string, done: (is: boolean) => any];
