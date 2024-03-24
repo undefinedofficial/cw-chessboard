@@ -17,7 +17,14 @@
         borderWidth: borderScale,
       }"
     >
-      <div ref="chessboard" class="cw-container" :class="{ outside: coordOutside }">
+      <div
+        ref="chessboard"
+        class="cw-container"
+        :class="{ outside: coordOutside, contour: borderSize > 0 }"
+        :style="{
+          borderRadius: boardRoundScale,
+        }"
+      >
         <div ref="piecesContainer" class="pieces" :class="pieceSet"></div>
         <slot />
       </div>
@@ -151,6 +158,7 @@ defineExpose({
         height: 100%;
         background-repeat: no-repeat;
         transition: none;
+        border-radius: inherit;
       }
 
       .pieces {

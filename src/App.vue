@@ -335,21 +335,18 @@ body,
   height: 100vh;
   margin: 0;
   padding: 0;
-  display: flex;
-  overflow: hidden;
+
+  @apply md:flex md:mx-5 md:overflow-hidden;
 }
 
 .chessboard-preview {
   display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 100vw;
-  max-height: 100vh;
+  width: 100vw;
   width: 100%;
   height: 100%;
   overflow: hidden;
-
-  @apply mx-5;
 }
 
 .chessboard-config {
@@ -361,8 +358,10 @@ body,
   width: 320px;
   min-width: 320px;
   max-width: 320px;
-  overflow: auto;
+  /* overflow: auto; */
 
+  width: 100vw;
+  height: 100vh;
   @apply m-5;
 }
 </style>

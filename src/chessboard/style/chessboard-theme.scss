@@ -53,11 +53,12 @@
   .chessboard-theme.#{$name} {
     .cw-wrapper {
       border-color: $border;
+      background-color: $border;
     }
     .cw-container {
-      &.outside {
-        border: 1px solid $coords-frame;
-      }
+      // &.outside {
+      border: 1px solid $coords-frame;
+      // }
       &::before {
         content: " ";
         background-color: #fff;

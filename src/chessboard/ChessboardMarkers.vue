@@ -131,10 +131,10 @@ const props = defineProps<MarkersProps>();
       border-width: 4px;
     }
     .marker-dot {
-      width: 40%;
-      height: 40%;
+      width: 30%;
+      height: 30%;
       border-radius: 9999px;
-      opacity: 0.9;
+      opacity: 0.8;
     }
     .marker-square {
       width: 100%;

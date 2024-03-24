@@ -1,5 +1,10 @@
 <template>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" version="1.1">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 1024 1024"
+    version="1.1"
+    class="marker-arrow"
+  >
     <defs>
       <marker
         id="arrow"
@@ -62,6 +67,11 @@ const to = computed(() =>
 </script>
 
 <style>
+.marker-arrow {
+  position: absolute;
+  z-index: 5;
+}
+
 .arrow-head {
   stroke-linecap: round;
 }
