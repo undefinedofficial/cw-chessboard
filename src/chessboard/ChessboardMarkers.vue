@@ -114,7 +114,7 @@ const props = defineProps<MarkersProps>();
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: all 0.1s ease-in-out;
+    // transition: all 0.1s ease-in-out;
 
     .marker-frame {
       width: 96%;

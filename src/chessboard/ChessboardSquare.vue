@@ -30,7 +30,7 @@ const floatingStyles = computed(() => {
   left: 0;
   width: 12.5%;
   height: 12.5%;
-  transition: all 0.2s ease-in-out;
+  // transition: all 0.2s ease-in-out;
   z-index: 3;
 
   &.above {
