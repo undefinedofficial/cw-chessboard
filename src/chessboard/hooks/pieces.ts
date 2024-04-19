@@ -178,13 +178,18 @@ export function usePieces({
     squares = newsquares;
   }
 
-  watch(fen, () =>
-    runAnimate(squares, stringToFen(fen.value), duration.value).then(() => redraw())
+  watch(
+    fen,
+    () => runAnimate(squares, stringToFen(fen.value), duration.value).finally(() => redraw()),
+    { flush: "sync" }
   );
-  watch(orientation, () =>
-    runAnimate(squares, [], duration.value).then(() =>
-      runAnimate([], squares, duration.value).then(() => redraw(squares))
-    )
+  watch(
+    orientation,
+    () =>
+      runAnimate(squares, [], duration.value).finally(() =>
+        runAnimate([], squares, duration.value).finally(() => redraw(squares))
+      ),
+    { flush: "sync" }
   );
   function createAnimation(fromSquares: SquareType[], toSquares: SquareType[]) {
     const changes = seekChanges(fromSquares, toSquares);
