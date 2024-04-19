@@ -76,7 +76,7 @@ const { size, Rescale } = useRescale(
 const ratioSize = computed(() => size.value / 900);
 const boardSize = computed(() => `${size.value}px`);
 const boardRoundScale = computed(() => `${props.roundSize * ratioSize.value}px`);
-const borderScale = computed(() => `${props.borderSize * ratioSize.value}px`);
+const borderScale = computed(() => `${(props.borderSize - 1) * ratioSize.value}px`);
 const fontScale = computed(() => `${props.fontSize * ratioSize.value}px`);
 
 const color = toRef(props, "orientation");
@@ -159,6 +159,11 @@ defineExpose({
         background-repeat: no-repeat;
         transition: none;
         border-radius: inherit;
+      }
+
+      &.contour {
+        border-width: 1px;
+        border-style: solid;
       }
 
       .pieces {

@@ -57,7 +57,7 @@
     }
     .cw-container {
       // &.outside {
-      border: 1px solid $coords-frame;
+      border-color: $coords-frame;
       // }
       &::before {
         content: " ";
