@@ -165,7 +165,9 @@ export function usePieces({
       );
   }
 
-  function redraw(newsquares = stringToFen(fen.value)) {
+  function redraw(newsquares?: SquareType[]) {
+    if (!newsquares) newsquares = stringToFen(fen.value);
+
     if (container.value == null) return console.warn("container is null");
 
     container.value.innerHTML = "";
@@ -178,18 +180,9 @@ export function usePieces({
     squares = newsquares;
   }
 
-  watch(
-    fen,
-    () => runAnimate(squares, stringToFen(fen.value), duration.value).finally(() => redraw()),
-    { flush: "sync" }
-  );
-  watch(
-    orientation,
-    () =>
-      runAnimate(squares, [], duration.value).finally(() =>
-        runAnimate([], squares, duration.value).finally(() => redraw(squares))
-      ),
-    { flush: "sync" }
+  watch(fen, () => runAnimate(squares, stringToFen(fen.value), duration.value));
+  watch(orientation, () =>
+    runAnimate(squares, [], duration.value).finally(() => runAnimate([], squares, duration.value))
   );
   function createAnimation(fromSquares: SquareType[], toSquares: SquareType[]) {
     const changes = seekChanges(fromSquares, toSquares);
@@ -324,7 +317,7 @@ export function usePieces({
           frameHandle = requestAnimationFrame(animationStep);
         })
     );
-    run();
+    run().finally(redraw);
     return task;
   }
 
