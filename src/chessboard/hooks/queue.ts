@@ -16,9 +16,9 @@ export function useQueue() {
    * Add task to queue return promise that will be resolved when task is finished
    */
   function addTask<T>(task: Task): Promise<T> {
-    return new Promise<any>((resolve, reject) => {
-      tasks.push(() => task().then(resolve).catch(reject));
-    });
+    return new Promise<any>((resolve, reject) =>
+      tasks.push(() => task().then(resolve).catch(reject))
+    );
   }
 
   /**

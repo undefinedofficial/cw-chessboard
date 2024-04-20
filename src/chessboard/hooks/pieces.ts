@@ -182,9 +182,23 @@ export function usePieces({
     isValid = true;
   }
 
-  watch(fen, () => runAnimate(squares, stringToFen(fen.value), duration.value));
-  watch(orientation, () =>
-    runAnimate(squares, [], duration.value).then(() => runAnimate([], squares, duration.value))
+  watch(
+    fen,
+    () => {
+      clear();
+      return runAnimate(squares, stringToFen(fen.value), duration.value);
+    },
+    { flush: "sync" }
+  );
+  watch(
+    orientation,
+    () => {
+      clear();
+      return runAnimate(squares, [], duration.value).then(() =>
+        runAnimate([], squares, duration.value)
+      );
+    },
+    { flush: "sync" }
   );
   function createAnimation(fromSquares: SquareType[], toSquares: SquareType[]) {
     const changes = seekChanges(fromSquares, toSquares);
