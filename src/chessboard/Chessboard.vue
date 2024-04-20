@@ -107,6 +107,7 @@ defineExpose({
   boardSize: size,
   Rescale,
   pieces,
+  wait: pieces.wait,
 });
 </script>
 

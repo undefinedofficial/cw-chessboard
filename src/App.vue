@@ -13,6 +13,7 @@
       :boardSet="boardSet"
       :pieceSet="piecesSet"
       :resize="true"
+      ref="chessboardEl"
     >
       <ChessboardMarkers :markers="markers" />
       <ChessboardSquare
@@ -214,6 +215,8 @@ import {
 import ControlRadio from "./ControlRadio.vue";
 import ControlRange from "./ControlRange.vue";
 
+const chessboardEl = ref<InstanceType<typeof Chessboard>>();
+
 let chess = new Chess();
 const boards = ["default", "blue", "green", "sport", "wood_light"]; // "wood_light"],
 const pieces = ["default", "grady", "staunty", "stock"];
@@ -229,6 +232,9 @@ const fenProxy = computed({
   set: (v) => {
     chess = new Chess(v);
     fen.value = v;
+    chessboardEl.value!.wait().then(() => {
+      console.log("moved finished");
+    });
   },
 });
 

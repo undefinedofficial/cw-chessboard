@@ -165,10 +165,11 @@ export function usePieces({
       );
   }
 
-  function redraw(newsquares?: SquareType[]) {
-    if (!newsquares) newsquares = stringToFen(fen.value);
-
+  let isValid = false;
+  function redraw(newsquares = stringToFen(fen.value)) {
     if (container.value == null) return console.warn("container is null");
+
+    if (isValid) return;
 
     container.value.innerHTML = "";
 
@@ -178,11 +179,12 @@ export function usePieces({
       container.value.appendChild(createPieceElement(indexToPoint(i), piece));
     }
     squares = newsquares;
+    isValid = true;
   }
 
   watch(fen, () => runAnimate(squares, stringToFen(fen.value), duration.value));
   watch(orientation, () =>
-    runAnimate(squares, [], duration.value).finally(() => runAnimate([], squares, duration.value))
+    runAnimate(squares, [], duration.value).then(() => runAnimate([], squares, duration.value))
   );
   function createAnimation(fromSquares: SquareType[], toSquares: SquareType[]) {
     const changes = seekChanges(fromSquares, toSquares);
@@ -241,7 +243,7 @@ export function usePieces({
     return animatedElements;
   }
 
-  const { IsRunning, addTask, clear, run } = useQueue();
+  const { IsRunning, addTask, clear, run, wait } = useQueue();
 
   async function runAnimate(
     fromSquares: SquareType[],
@@ -261,6 +263,7 @@ export function usePieces({
             // console.log("animationStep", time);
             if (!IsRunning() || document.hidden) return resolve();
 
+            isValid = false;
             if (!startTime) startTime = time;
             const timeDiff = time - startTime;
             if (timeDiff > duration) {
@@ -317,7 +320,8 @@ export function usePieces({
           frameHandle = requestAnimationFrame(animationStep);
         })
     );
-    run().finally(redraw);
+    run();
+    wait().then(() => redraw());
     return task;
   }
 
@@ -340,7 +344,7 @@ export function usePieces({
   }
   onMounted(redraw);
 
-  return { redraw, getPieceByIndex, getPieceByPoint, movePiece, setAlphaPiece, terminate };
+  return { redraw, getPieceByIndex, getPieceByPoint, movePiece, setAlphaPiece, terminate, wait };
 }
 
 export type UsePiecesReturn = ReturnType<typeof usePieces>;
