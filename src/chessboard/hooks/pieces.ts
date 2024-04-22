@@ -185,18 +185,23 @@ export function usePieces({
   watch(
     fen,
     () => {
-      clear();
-      return runAnimate(squares, stringToFen(fen.value), duration.value);
+      addTask<void>(async () => {
+        await runAnimate(squares, stringToFen(fen.value), duration.value);
+        redraw(stringToFen(fen.value));
+      });
+      run();
     },
     { flush: "sync" }
   );
   watch(
     orientation,
     () => {
-      clear();
-      return runAnimate(squares, [], duration.value).then(() =>
-        runAnimate([], squares, duration.value)
-      );
+      addTask<void>(() => runAnimate(squares, [], duration.value));
+      addTask<void>(async () => {
+        await runAnimate([], squares, duration.value);
+        redraw(stringToFen(fen.value));
+      });
+      run();
     },
     { flush: "sync" }
   );
@@ -264,79 +269,72 @@ export function usePieces({
     toSquares: SquareType[],
     duration: number
   ): Promise<void> {
-    const task = addTask<void>(
-      () =>
-        new Promise<void>((resolve) => {
-          if (document.hasFocus?.() === false) return resolve();
+    return new Promise<void>((resolve) => {
+      if (document.hasFocus?.() === false) return resolve();
 
-          const animatedElements = createAnimation(fromSquares, toSquares);
+      const animatedElements = createAnimation(fromSquares, toSquares);
 
-          let frameHandle: number | null = null;
-          let startTime: number;
-          function animationStep(time: number) {
-            // console.log("animationStep", time);
-            if (!IsRunning() || document.hidden) return resolve();
+      let frameHandle: number | null = null;
+      let startTime: number;
+      function animationStep(time: number) {
+        // console.log("animationStep", time);
+        if (!IsRunning() || document.hidden) return resolve();
 
-            isValid = false;
-            if (!startTime) startTime = time;
-            const timeDiff = time - startTime;
-            if (timeDiff > duration) {
-              if (frameHandle) {
-                cancelAnimationFrame(frameHandle);
-                frameHandle = null;
-              }
-              // console.log("ANIMATION FINISHED");
-              animatedElements.forEach((animatedItem) => {
-                // fix bug z-index
-                animatedItem.element.style.zIndex = "1";
+        isValid = false;
+        if (!startTime) startTime = time;
+        const timeDiff = time - startTime;
+        if (timeDiff > duration) {
+          if (frameHandle) {
+            cancelAnimationFrame(frameHandle);
+            frameHandle = null;
+          }
+          // console.log("ANIMATION FINISHED");
+          for (const animatedItem of animatedElements) {
+            // fix bug z-index
+            animatedItem.element.style.zIndex = "1";
 
-                if (animatedItem.type === CHANGE_TYPE.REMOVE)
-                  container.value!.removeChild(animatedItem.element);
-              });
-              return resolve();
-            }
+            if (animatedItem.type === CHANGE_TYPE.REMOVE)
+              container.value!.removeChild(animatedItem.element);
+          }
+          resolve();
+          return;
+        }
 
-            frameHandle = requestAnimationFrame(animationStep);
+        frameHandle = requestAnimationFrame(animationStep);
 
-            const t = Math.min(1, timeDiff / duration);
-            let progress = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
-            if (isNaN(progress) || progress > 0.99) progress = 1;
+        const t = Math.min(1, timeDiff / duration);
+        let progress = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
+        if (isNaN(progress) || progress > 0.99) progress = 1;
 
-            animatedElements.forEach((animatedItem) => {
-              // fix bug z-index
-              animatedItem.element.style.zIndex = "10";
+        animatedElements.forEach((animatedItem) => {
+          // fix bug z-index
+          animatedItem.element.style.zIndex = "10";
 
-              switch (animatedItem.type) {
-                case CHANGE_TYPE.MOVE:
-                  animatedItem.element.style.transform = `translate(${
-                    animatedItem.atPoint!.x +
-                    (animatedItem.toPoint!.x - animatedItem.atPoint!.x) * progress
-                  }%,
+          switch (animatedItem.type) {
+            case CHANGE_TYPE.MOVE:
+              animatedItem.element.style.transform = `translate(${
+                animatedItem.atPoint!.x +
+                (animatedItem.toPoint!.x - animatedItem.atPoint!.x) * progress
+              }%,
                 ${
                   animatedItem.atPoint!.y +
                   (animatedItem.toPoint!.y - animatedItem.atPoint!.y) * progress
                 }%`;
-                  break;
-                case CHANGE_TYPE.ADD:
-                  animatedItem.element.style.opacity = (
-                    Math.round(progress * 100) / 100
-                  ).toString();
-                  break;
-                case CHANGE_TYPE.REMOVE:
-                  animatedItem.element.style.opacity = (
-                    Math.round((1 - progress) * 100) / 100
-                  ).toString();
+              break;
+            case CHANGE_TYPE.ADD:
+              animatedItem.element.style.opacity = (Math.round(progress * 100) / 100).toString();
+              break;
+            case CHANGE_TYPE.REMOVE:
+              animatedItem.element.style.opacity = (
+                Math.round((1 - progress) * 100) / 100
+              ).toString();
 
-                  break;
-              }
-            });
+              break;
           }
-          frameHandle = requestAnimationFrame(animationStep);
-        })
-    );
-    run();
-    wait().then(() => redraw());
-    return task;
+        });
+      }
+      frameHandle = requestAnimationFrame(animationStep);
+    });
   }
 
   async function movePiece(from: Point, to: Point, animate = false) {
@@ -348,9 +346,15 @@ export function usePieces({
     newSquares[toCoord] = newSquares[fromCoord];
     newSquares[fromCoord] = null;
 
-    if (animate) await runAnimate(squares, newSquares, duration.value);
-    squares = newSquares;
-    return redraw(newSquares);
+    if (animate) {
+      const task = addTask(async () => {
+        await runAnimate(squares, newSquares, duration.value);
+        squares = newSquares;
+        redraw(newSquares);
+      });
+      run();
+      await task;
+    }
   }
 
   function terminate() {
