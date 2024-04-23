@@ -43,10 +43,10 @@ const isRight = computed(() => props.coordMode === "right");
 .chessboard-coords {
   pointer-events: none;
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
+  left: 2px;
+  right: 2px;
+  top: 2px;
+  bottom: 2px;
   z-index: 10;
   .coords {
     pointer-events: none;
