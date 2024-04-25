@@ -1,15 +1,11 @@
 <template>
-  <Transition
-    enter-from-class="opacity-0"
-    leave-to-class="opacity-0"
-    enter-active-class="transition-opacity"
-    leave-active-class="transition-opacity"
-  >
+  <Transition name="promotion-dialog">
     <div v-if="coord" class="promotion-dialog pieces" :class="pieceSet">
       <button
         v-for="(piece, i) in ['q', 'r', 'b', 'n']"
+        :key="i"
         class="piece promotion-piece"
-        :class="`w${piece}`"
+        :class="`${pieceColor}${piece}`"
         :style="{ transform: `translate(${coord.x * 100}%, ${i * 100}%)` }"
         @pointerdown.stop="resolveHandler(piece)"
       ></button>
@@ -18,12 +14,18 @@
 </template>
 
 <script lang="ts" setup>
-import { inject, type Ref, ref } from "vue";
+import { computed, inject, type Ref, ref, Transition } from "vue";
 import type { Color, SquarePoint } from "./types";
 import { invertPoint, stringToSquare } from "./utils/point";
 
+const props = defineProps<{
+  color?: Color;
+}>();
+
 const pieceSet = inject<string>("pieceSet")!;
 const orientation = inject<Ref<Color>>("orientation")!;
+
+const pieceColor = computed(() => props.color || orientation.value);
 
 const coord = ref<SquarePoint | null>();
 let resolveHandler: (result: string) => void;
@@ -63,6 +65,22 @@ defineExpose({ require, abort });
     &:hover {
       background: #383838d8;
     }
+  }
+
+  &-enter-active {
+    animation: show-promotion-dialog 0.2s ease-in-out;
+  }
+  &-leave-active {
+    animation: show-promotion-dialog 0.2s ease-in-out reverse;
+  }
+}
+
+@keyframes show-promotion-dialog {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>

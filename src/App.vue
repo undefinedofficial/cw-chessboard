@@ -33,6 +33,7 @@
         @enterSquare="onEnterSquare($event), selectMarkers('active', MARKER.FRAME, [$event])"
         @leaveSquare="onLeaveSquare($event), selectMarkers('active')"
       />
+      <PromotionDialog ref="promotionDialogEl" />
     </Chessboard>
   </div>
   <div class="chessboard-config">
@@ -200,7 +201,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
-import { Chess } from "chess.ts";
+import { Chess, type PieceSymbol } from "chess.ts";
 
 import {
   type Marker,
@@ -211,11 +212,13 @@ import {
   ChessboardMarkers,
   ChessboardControl,
   ChessboardSquare,
+  PromotionDialog,
 } from "cw-chessboard/index";
 import ControlRadio from "./ControlRadio.vue";
 import ControlRange from "./ControlRange.vue";
 
 const chessboardEl = ref<InstanceType<typeof Chessboard>>();
+const promotionDialogEl = ref<InstanceType<typeof PromotionDialog>>();
 
 let chess = new Chess();
 const boards = ["default", "blue", "green", "sport", "wood_light"]; // "wood_light"],
@@ -278,7 +281,7 @@ const selectMarkers = (
   markers.value = markers.value.filter((m) => m.id !== id);
   if (squares)
     squares.forEach((square) =>
-      markers.value.push({ id, type: marker!, square, color, size: markerSize.value })
+      markers.value.push({ id, type: marker!, square, color, size: markerSize.value } as Marker)
     );
 };
 
@@ -299,13 +302,16 @@ const onAfterMove = async (
   toSquare: string,
   done: (accept: boolean) => void
 ) => {
+  let promotion!: PieceSymbol;
+  if (chess.isPromotion({ from: fromSquare, to: toSquare }))
+    promotion = (await promotionDialogEl.value!.require(toSquare)) as PieceSymbol;
   console.log("AfterMove: ", fromSquare, toSquare);
   selectMarkers("selected");
   selectMarkers("active");
-  const move = chess.move({ from: fromSquare, to: toSquare });
-  if (!move) return await done(false);
+  const move = chess.move({ from: fromSquare, to: toSquare, promotion });
+  if (!move) return done(false);
 
-  done(true);
+  await done(true);
   fen.value = chess.fen();
   turn.value = chess.turn();
 };
