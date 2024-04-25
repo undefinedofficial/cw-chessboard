@@ -1,4 +1,4 @@
-import { type Ref, watch, onMounted } from "vue";
+import { type Ref, watch, onMounted, nextTick } from "vue";
 import { indexToPoint, stringToFen, type SquareType, pointToIndex } from "./fen";
 import type { Color, ChangeEvent, PieceSymbol, Point } from "../types";
 import { invertPoint, squareToString } from "../utils/point";
@@ -166,10 +166,10 @@ export function usePieces({
   }
 
   let isValid = false;
-  function redraw(newsquares = stringToFen(fen.value)) {
+  function redraw(newsquares = stringToFen(fen.value), invalid = false) {
     if (container.value == null) return console.warn("container is null");
 
-    if (isValid) return;
+    if (isValid && !invalid) return;
 
     container.value.innerHTML = "";
 
@@ -184,11 +184,9 @@ export function usePieces({
 
   watch(
     fen,
-    () => {
-      addTask<void>(async () => {
-        await runAnimate(squares, stringToFen(fen.value), duration.value);
-        redraw(stringToFen(fen.value));
-      });
+    (value) => {
+      addTask<void>(() => runAnimate(squares, stringToFen(fen.value), duration.value));
+      wait().then(() => redraw(stringToFen(fen.value)));
       run();
     },
     { flush: "sync" }
@@ -197,10 +195,8 @@ export function usePieces({
     orientation,
     () => {
       addTask<void>(() => runAnimate(squares, [], duration.value));
-      addTask<void>(async () => {
-        await runAnimate([], squares, duration.value);
-        redraw(stringToFen(fen.value));
-      });
+      addTask<void>(() => runAnimate([], squares, duration.value));
+      wait().then(() => redraw(stringToFen(fen.value)));
       run();
     },
     { flush: "sync" }
@@ -337,7 +333,7 @@ export function usePieces({
     });
   }
 
-  async function movePiece(from: Point, to: Point, animate = false) {
+  async function movePiece(from: Point, to: Point, animate = false): Promise<void> {
     const newSquares = new Array(...squares);
     const fromCoord = pointToIndex(from);
     if (!newSquares[fromCoord]) return console.warn("no piece on", squareToString(from));
@@ -347,13 +343,17 @@ export function usePieces({
     newSquares[fromCoord] = null;
 
     if (animate) {
-      const task = addTask(async () => {
+      const task = addTask<void>(async () => {
         await runAnimate(squares, newSquares, duration.value);
         squares = newSquares;
         redraw(newSquares);
       });
       run();
-      await task;
+      return task;
+    } else {
+      await nextTick();
+      clear();
+      redraw(newSquares, true);
     }
   }
 
