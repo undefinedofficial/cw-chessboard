@@ -185,22 +185,34 @@ export function usePieces({
   watch(
     fen,
     (value) => {
-      addTask<void>(() => runAnimate(squares, stringToFen(fen.value), duration.value));
-      wait().then(() => redraw(stringToFen(fen.value)));
-      run();
+      addTask<void>(async () => {
+        await runAnimate(squares, stringToFen(fen.value), duration.value);
+        redraw();
+      });
     },
-    { flush: "sync" }
+    { flush: "pre" }
   );
   watch(
     orientation,
     () => {
-      addTask<void>(() => runAnimate(squares, [], duration.value));
-      addTask<void>(() => runAnimate([], squares, duration.value));
-      wait().then(() => redraw(stringToFen(fen.value)));
+      addTask<void>(() => runAnimate(squares, [], duration.value / 2));
+      addTask<void>(async () => {
+        await runAnimate([], squares, duration.value / 2);
+        redraw();
+      });
+    },
+    { flush: "pre" }
+  );
+
+  watch(
+    [fen, orientation],
+    () => {
+      wait().then(() => redraw());
       run();
     },
-    { flush: "sync" }
+    { flush: "post" }
   );
+
   function createAnimation(fromSquares: SquareType[], toSquares: SquareType[]) {
     const changes = seekChanges(fromSquares, toSquares);
     const animatedElements: AnimatedElement[] = [];
