@@ -59,13 +59,6 @@
       >
         <div class="marker-square" :class="marker.color || 'default'"></div>
       </ChessboardSquare>
-      <ChessboardSquare
-        v-else-if="marker.type === MARKER.TEXT"
-        class="marker"
-        :square="marker.square"
-      >
-        <div class="marker-text" :class="marker.color || 'default'">{{ marker.text }}</div>
-      </ChessboardSquare>
       <ArrowMarker
         v-else-if="marker.type === MARKER.ARROW"
         class="marker"
@@ -107,6 +100,8 @@ const props = defineProps<MarkersProps>();
   right: 0;
   top: -1px;
   bottom: 0;
+  display: contents;
+
   .marker {
     user-select: none;
     pointer-events: none;
@@ -140,10 +135,6 @@ const props = defineProps<MarkersProps>();
       width: 100%;
       height: 100%;
       opacity: 0.8;
-    }
-    .marker-text {
-      background-color: transparent !important;
-      font-size: 24px;
     }
   }
 }

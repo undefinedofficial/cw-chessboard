@@ -22,6 +22,9 @@
       >
         square
       </ChessboardSquare>
+      <ChessboardSquare square="b5" class="flex justify-center items-center text-2xl" above>
+        1.0
+      </ChessboardSquare>
       <ChessboardControl
         v-if="!viewonly"
         :enableColor="turn"
@@ -200,7 +203,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { Chess, type PieceSymbol } from "chess.ts";
 
 import {
@@ -235,9 +238,9 @@ const fenProxy = computed({
   set: (v) => {
     chess = new Chess(v);
     fen.value = v;
-    chessboardEl.value!.wait().then(() => {
-      console.log("moved finished");
-    });
+    // chessboardEl.value!.wait().then(() => {
+    //   console.log("moved finished");
+    // });
   },
 });
 
@@ -259,7 +262,6 @@ const markers = ref<(Marker & { id?: string })[]>([
   { type: MARKER.DOT, color: "red", square: "a6" },
   { type: MARKER.CIRCLE, color: "blue", square: "a3" },
   { type: MARKER.SQUARE, color: "red", square: "b6" },
-  { type: MARKER.TEXT, square: "b5", text: "1.0" },
   { type: MARKER.ARROW, color: "blue", square: "b3", toSquare: "b4" },
 ]);
 

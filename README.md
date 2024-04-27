@@ -123,15 +123,6 @@ pnpm add https://github.com/undefinedofficial/cw-chessboard.git
    | color? | "red"-"green"-"blue" | цвет маркера (при необходимости) |
    | type | MARKER.FRAME-CIRCLE-DOT-SQUARE-NONE | тип маркера (рамка, круг, точка, квадрат, скрыть) |
 
-   MarkerText :
-
-   | свойство |         Тип          |                 описание                 |
-   | -------- | :------------------: | :--------------------------------------: |
-   | square   |        string        |                координаты                |
-   | color?   | "red"-"green"-"blue" |     цвет маркера (при необходимости)     |
-   | type     |     MARKER.TEXT      |               тип маркера                |
-   | text     |        string        | отображаймый текст на квадрате по центру |
-
    MarkerArrow :
 
    | свойство |         Тип          |             описание             |
@@ -140,6 +131,7 @@ pnpm add https://github.com/undefinedofficial/cw-chessboard.git
    | color?   | "red"-"green"-"blue" | цвет маркера (при необходимости) |
    | type     |     MARKER.ARROW     |           тип маркера            |
    | toSquare |        string        |           координаты в           |
+
 3. **ChessboardControl** - Вложеный компонент отвечающий за взаимодействие с фигурами.
 
    | Атрибуты | Тип | описание | знач. по умолчанию |
@@ -171,16 +163,9 @@ pnpm add https://github.com/undefinedofficial/cw-chessboard.git
    </template>
    ```
 
-   ```ts
-   const promotionDialog = ref<InstanceType<typeof PromotionDialog>>();
-   onMounted(async () => {
-      try
-      {
-         const propmotion = await promotionDialog.value?.require();
-      }
-      catch()
-      {
-         console.log("aborted!");
-      }
-   });
-   ```
+5. **ChessboardSquare** - Вложеный компонент отвечающий за позиционирование в ячейке на доске вложенного в слот контента.
+
+   | Атрибуты |   Тип   |           описание           | знач. по умолчанию |
+   | -------- | :-----: | :--------------------------: | -----------------: |
+   | square   | string  |      Координаты ячейки       |                    |
+   | above    | boolean | Переместить на передний план |              false |

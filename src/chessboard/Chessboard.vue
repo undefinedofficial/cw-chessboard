@@ -43,14 +43,14 @@
 
 <script lang="ts" setup>
 import "./style/main.scss";
-import type { ChessboardProps, ChangeEvent } from "./types";
-import { ref, computed, toRef, provide, onMounted, onUnmounted } from "vue";
+import type { ChessboardProps, ChangeEvent, Color } from "./types";
+import { ref, computed, toRef, provide, onMounted, onUnmounted, watch } from "vue";
 import ChessboardCoords from "./components/ChessboardCoords.vue";
 import { useRescale } from "./hooks/rescale";
 import { usePieces } from "./hooks/pieces";
+import type { ChessboardPieces } from "./hooks/pieces";
 
 const props = withDefaults(defineProps<ChessboardProps>(), {
-  fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQ",
   orientation: "w",
   borderSize: 12,
   roundSize: 0,
@@ -63,7 +63,7 @@ const props = withDefaults(defineProps<ChessboardProps>(), {
 });
 
 const emit = defineEmits<{
-  ready: [];
+  ready: [ChessboardPieces];
   moves: [moves: ChangeEvent[]];
 }>();
 const wrapper = ref<HTMLElement | null>(null);
@@ -79,19 +79,28 @@ const boardRoundScale = computed(() => `${props.roundSize * ratioSize.value}px`)
 const borderScale = computed(() => `${(props.borderSize - 1) * ratioSize.value}px`);
 const fontScale = computed(() => `${props.fontSize * ratioSize.value}px`);
 
-const color = toRef(props, "orientation");
 const piecesContainer = ref<HTMLElement | null>(null);
 const pieces = usePieces({
-  container: piecesContainer,
-  fen: toRef(props, "fen"),
-  orientation: color,
-  duration: toRef(props, "duration"),
-  alphaPiece: toRef(props, "alphaPiece"),
   onChange(moves) {
     emit("moves", moves);
   },
+  onOrientationChange(orientation) {
+    color.value = orientation;
+  },
 });
 
+watch(
+  props,
+  async ({ fen, orientation, alphaPiece, duration }) => {
+    if (fen) await pieces.setFen(fen, true);
+    if (orientation) await pieces.setOrientation(orientation, true);
+    pieces.setIsAlphaPiece(alphaPiece);
+    pieces.setDuration(duration);
+  },
+  { deep: true }
+);
+
+const color = ref<Color>();
 const boardSet = toRef(props, "boardSet");
 const pieceSet = toRef(props, "pieceSet");
 provide("chessboard", chessboard);
@@ -100,14 +109,19 @@ provide("pieces", pieces);
 provide("boardSet", boardSet);
 provide("pieceSet", pieceSet);
 
-onMounted(() => emit("ready"));
-onUnmounted(() => pieces.terminate());
+onMounted(() => {
+  pieces.setContainer(piecesContainer.value!);
+  if (props.fen) pieces.setFen(props.fen);
+  pieces.setOrientation(props.orientation);
+  pieces.setDuration(props.duration);
+  pieces.setIsAlphaPiece(props.alphaPiece);
+  emit("ready", pieces);
+});
 
 defineExpose({
   boardSize: size,
   Rescale,
   pieces,
-  wait: pieces.wait,
 });
 </script>
 
@@ -158,7 +172,6 @@ defineExpose({
         width: 100%;
         height: 100%;
         background-repeat: no-repeat;
-        transition: none;
         border-radius: inherit;
       }
 
@@ -176,8 +189,7 @@ defineExpose({
         left: 0;
         width: 100%;
         height: 100%;
-        transition: none !important;
-        z-index: 5;
+        z-index: 10;
         .piece {
           position: absolute;
           display: block;
@@ -185,8 +197,6 @@ defineExpose({
           width: 12.5%;
           background-repeat: no-repeat;
           background-size: contain;
-
-          transition: none !important;
         }
       }
     }

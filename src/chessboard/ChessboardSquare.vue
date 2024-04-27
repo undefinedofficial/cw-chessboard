@@ -34,7 +34,7 @@ const floatingStyles = computed(() => {
   z-index: 3;
 
   &.above {
-    z-index: 5;
+    z-index: 14;
   }
 }
 </style>

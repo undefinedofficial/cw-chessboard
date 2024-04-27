@@ -1,4 +1,3 @@
-import { type Ref, watch, onMounted, nextTick } from "vue";
 import { indexToPoint, stringToFen, type SquareType, pointToIndex } from "./fen";
 import type { Color, ChangeEvent, PieceSymbol, Point } from "../types";
 import { invertPoint, squareToString } from "../utils/point";
@@ -105,48 +104,78 @@ interface PieceSquare {
 }
 
 interface UsePiecesOptions {
-  container: Ref<HTMLElement | null>;
-  fen: Ref<string>;
-  orientation: Ref<Color>;
-  duration: Ref<number>;
-  alphaPiece: Ref<boolean>;
+  onOrientationChange?: (orientation: Color) => void;
   onChange?: (moves: ChangeEvent[]) => void;
 }
 
-export function usePieces({
-  fen,
-  orientation,
-  duration,
-  container,
-  alphaPiece,
-  onChange,
-}: UsePiecesOptions) {
+export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
+  let container: HTMLElement | null = null;
+  let fen = "";
+  let duration = 200;
+  let orientation: Color = "w";
+  let isAlphaPiece = false;
   let squares: SquareType[] = [];
+
+  function setContainer(newContainer: HTMLElement) {
+    container = newContainer;
+  }
+
+  async function setFen(newFen: string, animate = false) {
+    if (newFen === fen) return;
+    fen = newFen;
+    const newSquares = stringToFen(fen);
+    if (animate) await runAnimate(squares, newSquares, duration, orientation);
+    redraw(newSquares, orientation, true);
+    return Promise.resolve();
+  }
+
+  function setDuration(newDuration: number) {
+    duration = newDuration;
+  }
+
+  async function setOrientation(newOrientation: Color, animate = false) {
+    if (newOrientation === orientation) return;
+    orientation = newOrientation;
+    if (animate) {
+      await runAnimate(squares, [], duration / 2, orientation);
+      await runAnimate([], squares, duration / 2, orientation);
+    }
+    redraw(squares, orientation, true);
+    onOrientationChange?.(orientation);
+    return Promise.resolve();
+  }
+
+  function setIsAlphaPiece(newAlphaPiece: boolean) {
+    isAlphaPiece = newAlphaPiece;
+  }
+
   const getPieceByIndex = (idx: number): null | PieceSquare => {
     const square = squares[idx];
     if (!square) return null;
     const name = square.toLowerCase() as PieceSymbol;
     return { name, color: name === square ? "b" : "w" };
   };
+
   const getPieceByPoint = (p: Point) => getPieceByIndex(pointToIndex(p));
 
-  function createPieceElement(to: Point, piece: PieceSymbol) {
+  function createPieceElement(to: Point, piece: PieceSymbol, orientation: Color) {
     const element = document.createElement("div");
-    const point = invertPoint(to, orientation.value);
+    const point = invertPoint(to, orientation);
     const figure = piece.toLowerCase();
     const dataPiece = (figure === piece ? "b" : "w") + figure;
     element.setAttribute("data-square", squareToString(to));
     element.setAttribute("data-piece", dataPiece);
     element.classList.add("piece", dataPiece);
     element.style.transform = `translate(${point.x * 100}%, ${point.y * 100}%)`;
-    element.style.zIndex = "1";
+    element.style.zIndex = "5";
+    element.style.opacity = "1";
     return element;
   }
   function getPieceElement(to: Point, piece: PieceSymbol): HTMLDivElement | null {
     const figure = piece.toLowerCase();
     const stringSquare = squareToString(to);
     const dataPiece = (figure === piece ? "b" : "w") + figure;
-    const element: any = container.value!.querySelector(
+    const element: any = container!.querySelector(
       `[data-piece="${dataPiece}"][data-square="${stringSquare}"]`
     );
 
@@ -155,7 +184,7 @@ export function usePieces({
 
   function setAlphaPiece(squarePoint: Point, pieceName: PieceSymbol, value: boolean) {
     const element = getPieceElement(squarePoint, pieceName);
-    if (element) element.style.opacity = !value ? "1" : alphaPiece.value ? "0.5" : "0";
+    if (element) element.style.opacity = !value ? "1" : isAlphaPiece ? "0.5" : "0";
     else
       console.warn(
         "Invalid value for square piece: ",
@@ -166,54 +195,23 @@ export function usePieces({
   }
 
   let isValid = false;
-  function redraw(newsquares = stringToFen(fen.value), invalid = false) {
-    if (container.value == null) return console.warn("container is null");
+  function redraw(newsquares: SquareType[], orientation: Color, invalid = false) {
+    if (!container) return console.warn("container is null");
 
     if (isValid && !invalid) return;
 
-    container.value.innerHTML = "";
+    container.innerHTML = "";
 
     for (let i = 0; i < newsquares.length; i++) {
       const piece = newsquares[i];
       if (!piece) continue;
-      container.value.appendChild(createPieceElement(indexToPoint(i), piece));
+      container.appendChild(createPieceElement(indexToPoint(i), piece, orientation));
     }
     squares = newsquares;
     isValid = true;
   }
 
-  watch(
-    fen,
-    (value) => {
-      addTask<void>(async () => {
-        await runAnimate(squares, stringToFen(fen.value), duration.value);
-        redraw();
-      });
-    },
-    { flush: "pre" }
-  );
-  watch(
-    orientation,
-    () => {
-      addTask<void>(() => runAnimate(squares, [], duration.value / 2));
-      addTask<void>(async () => {
-        await runAnimate([], squares, duration.value / 2);
-        redraw();
-      });
-    },
-    { flush: "pre" }
-  );
-
-  watch(
-    [fen, orientation],
-    () => {
-      wait().then(() => redraw());
-      run();
-    },
-    { flush: "post" }
-  );
-
-  function createAnimation(fromSquares: SquareType[], toSquares: SquareType[]) {
+  function createAnimation(fromSquares: SquareType[], toSquares: SquareType[], orientation: Color) {
     const changes = seekChanges(fromSquares, toSquares);
     const animatedElements: AnimatedElement[] = [];
     changes.forEach((change) => {
@@ -222,9 +220,9 @@ export function usePieces({
         case CHANGE_TYPE.MOVE: {
           const element = getPieceElement(at, change.piece);
           if (!element) return;
-          container.value!.appendChild(element); // move element to top layer
-          const atPoint = invertPoint(indexToPoint(change.atIndex), orientation.value);
-          const toPoint = invertPoint(indexToPoint(change.toIndex), orientation.value);
+          container!.appendChild(element); // move element to top layer
+          const atPoint = invertPoint(indexToPoint(change.atIndex), orientation);
+          const toPoint = invertPoint(indexToPoint(change.toIndex), orientation);
           animatedElements.push({
             type: change.type,
             element,
@@ -234,10 +232,10 @@ export function usePieces({
           break;
         }
         case CHANGE_TYPE.ADD:
-          const element = createPieceElement(at, change.piece);
+          const element = createPieceElement(at, change.piece, orientation);
           element.style.opacity = "0";
-          container.value!.appendChild(element);
-          const atPoint = invertPoint(indexToPoint(change.atIndex), orientation.value);
+          container!.appendChild(element);
+          const atPoint = invertPoint(indexToPoint(change.atIndex), orientation);
           animatedElements.push({
             type: change.type,
             element,
@@ -270,23 +268,22 @@ export function usePieces({
     return animatedElements;
   }
 
-  const { IsRunning, addTask, clear, run, wait } = useQueue();
-
-  async function runAnimate(
+  function runAnimate(
     fromSquares: SquareType[],
     toSquares: SquareType[],
-    duration: number
+    duration: number,
+    orientation: Color
   ): Promise<void> {
     return new Promise<void>((resolve) => {
       if (document.hasFocus?.() === false) return resolve();
 
-      const animatedElements = createAnimation(fromSquares, toSquares);
+      const animatedElements = createAnimation(fromSquares, toSquares, orientation);
 
       let frameHandle: number | null = null;
       let startTime: number;
       function animationStep(time: number) {
-        // console.log("animationStep", time);
-        if (!IsRunning() || document.hidden) return resolve();
+        console.log("animationStep", time);
+        // if (!IsRunning() || document.hidden) return resolve();
 
         isValid = false;
         if (!startTime) startTime = time;
@@ -299,10 +296,10 @@ export function usePieces({
           // console.log("ANIMATION FINISHED");
           for (const animatedItem of animatedElements) {
             // fix bug z-index
-            animatedItem.element.style.zIndex = "1";
+            animatedItem.element.style.zIndex = "5";
 
-            if (animatedItem.type === CHANGE_TYPE.REMOVE)
-              container.value!.removeChild(animatedItem.element);
+            if (animatedItem.type === CHANGE_TYPE.REMOVE && animatedItem.element.parentNode)
+              container!.removeChild(animatedItem.element);
           }
           resolve();
           return;
@@ -316,7 +313,7 @@ export function usePieces({
 
         animatedElements.forEach((animatedItem) => {
           // fix bug z-index
-          animatedItem.element.style.zIndex = "10";
+          animatedItem.element.style.zIndex = "15";
 
           switch (animatedItem.type) {
             case CHANGE_TYPE.MOVE:
@@ -354,27 +351,23 @@ export function usePieces({
     newSquares[toCoord] = newSquares[fromCoord];
     newSquares[fromCoord] = null;
 
-    if (animate) {
-      const task = addTask<void>(async () => {
-        await runAnimate(squares, newSquares, duration.value);
-        squares = newSquares;
-        redraw(newSquares);
-      });
-      run();
-      return task;
-    } else {
-      await nextTick();
-      clear();
-      redraw(newSquares, true);
-    }
+    if (animate) await runAnimate(squares, newSquares, duration, orientation);
+
+    redraw(newSquares, orientation, true);
+    return Promise.resolve();
   }
 
-  function terminate() {
-    clear();
-  }
-  onMounted(redraw);
-
-  return { redraw, getPieceByIndex, getPieceByPoint, movePiece, setAlphaPiece, terminate, wait };
+  return {
+    getPieceByIndex,
+    getPieceByPoint,
+    movePiece,
+    setAlphaPiece,
+    setFen,
+    setDuration,
+    setOrientation,
+    setIsAlphaPiece,
+    setContainer,
+  };
 }
 
-export type UsePiecesReturn = ReturnType<typeof usePieces>;
+export type ChessboardPieces = ReturnType<typeof usePieces>;

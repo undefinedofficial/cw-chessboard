@@ -21,7 +21,7 @@ import {
   squareToString,
   squareValid,
 } from "./utils/point";
-import type { UsePiecesReturn } from "./hooks/pieces";
+import type { ChessboardPieces } from "./hooks/pieces";
 import { useControl } from "./hooks/control";
 
 export interface ChessboardControlProps {
@@ -45,7 +45,7 @@ const emits = defineEmits<{
 const DRAGGING_SENSITIVE = 32;
 
 const chessboard = inject<Ref<HTMLDivElement>>("chessboard")!;
-const pieces = inject<UsePiecesReturn>("pieces")!;
+const pieces = inject<ChessboardPieces>("pieces")!;
 const pieceSet = inject<Ref<string>>("pieceSet")!;
 const orientation = inject<Ref<Color>>("orientation")!;
 
@@ -214,9 +214,12 @@ useControl({
 </script>
 
 <style lang="scss">
-.pieces.move-field .piece {
+.pieces.move-field {
+  display: contents;
   pointer-events: all;
   cursor: move;
-  z-index: 100;
+  .piece {
+    z-index: 100;
+  }
 }
 </style>
