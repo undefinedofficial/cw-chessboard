@@ -92,8 +92,8 @@ const pieces = usePieces({
 watch(
   props,
   async ({ fen, orientation, alphaPiece, duration }) => {
-    if (fen) await pieces.setFen(fen, true);
-    if (orientation) await pieces.setOrientation(orientation, true);
+    if (fen) pieces.setFen(fen, true);
+    if (orientation) pieces.setOrientation(orientation, true);
     pieces.setIsAlphaPiece(alphaPiece);
     pieces.setDuration(duration);
   },

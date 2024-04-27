@@ -311,6 +311,14 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     });
   }
 
+  function terminate() {
+    queue.clear();
+  }
+
+  function setContainer(newContainer: HTMLElement) {
+    container = newContainer;
+  }
+
   async function movePiece(from: Point, to: Point, animate = false): Promise<void> {
     const newSquares = new Array(...squares);
     const fromCoord = pointToIndex(from);
@@ -320,17 +328,12 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     newSquares[toCoord] = newSquares[fromCoord];
     newSquares[fromCoord] = null;
 
-    if (animate) await runAnimate(squares, newSquares, duration, orientation);
+    let dur = animate ? duration : 0;
+    if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
 
-    redraw(newSquares, orientation, true);
-  }
-
-  function terminate() {
-    queue.clear();
-  }
-
-  function setContainer(newContainer: HTMLElement) {
-    container = newContainer;
+    return queue
+      .addTask(() => runAnimate(squares, newSquares, dur, orientation))
+      .then(() => redraw(newSquares, orientation, true));
   }
 
   async function setFen(newFen: string, animate = false) {
