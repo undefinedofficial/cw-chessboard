@@ -1,54 +1,54 @@
 export type Task = () => Promise<void>;
 
-export function useQueue() {
-  let isRunning = false;
-  const tasks: Task[] = [];
-  const waits: Task[] = [];
+export class PromiseQueue {
+  private isRunning: boolean;
+  private tasks: Task[];
 
   /**
    * check if queue is running
    */
-  function IsRunning() {
-    return isRunning;
+  get IsRunning() {
+    return this.isRunning;
+  }
+
+  /**
+   * number of tasks in queue
+   */
+  get Size() {
+    return this.tasks.length;
+  }
+
+  constructor() {
+    this.isRunning = false;
+    this.tasks = [];
   }
 
   /**
    * Add task to queue return promise that will be resolved when task is finished
    */
-  function addTask<T>(task: Task): Promise<T> {
-    return new Promise<any>((resolve, reject) =>
-      tasks.push(() => task().then(resolve).catch(reject))
-    );
+  addTask<T>(task: Task): Promise<T> {
+    return new Promise<any>((resolve, reject) => {
+      this.tasks.push(() => task().then(resolve).catch(reject));
+      this.run();
+    });
   }
 
   /**
    * run tasks in queue
    */
-  async function run() {
-    if (!isRunning) {
-      isRunning = true;
-      while (tasks.length) await tasks.shift()!();
+  private async run() {
+    if (this.isRunning) return;
+    this.isRunning = true;
+    while (this.tasks.length) await this.tasks.shift()!();
 
-      waits.forEach((w) => w());
-      waits.length = 0;
-      isRunning = false;
-    }
-  }
-
-  /**
-   * wait for all tasks to finish
-   */
-  function wait() {
-    return new Promise<void>((resolve) => waits.push(resolve as Task));
+    this.isRunning = false;
   }
 
   /**
    * terminate all tasks
    */
-  function clear() {
-    tasks.length = 0;
-    isRunning = false;
+  clear() {
+    this.tasks.length = 0;
+    this.isRunning = false;
   }
-
-  return { IsRunning, run, addTask, clear, wait };
 }

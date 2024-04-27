@@ -1,7 +1,7 @@
 import { indexToPoint, stringToFen, type SquareType, pointToIndex } from "./fen";
 import type { Color, ChangeEvent, PieceSymbol, Point } from "../types";
 import { invertPoint, squareToString } from "../utils/point";
-import { useQueue } from "./queue";
+import { PromiseQueue } from "./queue";
 
 const enum CHANGE_TYPE {
   ADD,
@@ -35,6 +35,16 @@ interface ChangeMove extends IChanged {
 }
 
 type Change = ChangeAddOrRemove | ChangeMove;
+
+interface PieceSquare {
+  name: PieceSymbol;
+  color: Color;
+}
+
+interface UsePiecesOptions {
+  onOrientationChange?: (orientation: Color) => void;
+  onChange?: (moves: ChangeEvent[]) => void;
+}
 
 function squareDistance(index1: number, index2: number) {
   const file1 = index1 % 8;
@@ -98,16 +108,6 @@ const seekChanges = (fromSquares: SquareType[], toSquares: SquareType[]) => {
   return changes;
 };
 
-interface PieceSquare {
-  name: PieceSymbol;
-  color: Color;
-}
-
-interface UsePiecesOptions {
-  onOrientationChange?: (orientation: Color) => void;
-  onChange?: (moves: ChangeEvent[]) => void;
-}
-
 export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
   let container: HTMLElement | null = null;
   let fen = "";
@@ -115,39 +115,6 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
   let orientation: Color = "w";
   let isAlphaPiece = false;
   let squares: SquareType[] = [];
-
-  function setContainer(newContainer: HTMLElement) {
-    container = newContainer;
-  }
-
-  async function setFen(newFen: string, animate = false) {
-    if (newFen === fen) return;
-    fen = newFen;
-    const newSquares = stringToFen(fen);
-    if (animate) await runAnimate(squares, newSquares, duration, orientation);
-    redraw(newSquares, orientation, true);
-    return Promise.resolve();
-  }
-
-  function setDuration(newDuration: number) {
-    duration = newDuration;
-  }
-
-  async function setOrientation(newOrientation: Color, animate = false) {
-    if (newOrientation === orientation) return;
-    orientation = newOrientation;
-    if (animate) {
-      await runAnimate(squares, [], duration / 2, orientation);
-      await runAnimate([], squares, duration / 2, orientation);
-    }
-    redraw(squares, orientation, true);
-    onOrientationChange?.(orientation);
-    return Promise.resolve();
-  }
-
-  function setIsAlphaPiece(newAlphaPiece: boolean) {
-    isAlphaPiece = newAlphaPiece;
-  }
 
   const getPieceByIndex = (idx: number): null | PieceSquare => {
     const square = squares[idx];
@@ -268,6 +235,8 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     return animatedElements;
   }
 
+  const queue = new PromiseQueue();
+
   function runAnimate(
     fromSquares: SquareType[],
     toSquares: SquareType[],
@@ -283,7 +252,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
       let startTime: number;
       function animationStep(time: number) {
         console.log("animationStep", time);
-        // if (!IsRunning() || document.hidden) return resolve();
+        if (!queue.IsRunning || document.hidden) return resolve();
 
         isValid = false;
         if (!startTime) startTime = time;
@@ -293,7 +262,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
             cancelAnimationFrame(frameHandle);
             frameHandle = null;
           }
-          // console.log("ANIMATION FINISHED");
+          console.log("ANIMATION FINISHED");
           for (const animatedItem of animatedElements) {
             // fix bug z-index
             animatedItem.element.style.zIndex = "5";
@@ -354,7 +323,48 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     if (animate) await runAnimate(squares, newSquares, duration, orientation);
 
     redraw(newSquares, orientation, true);
-    return Promise.resolve();
+  }
+
+  function terminate() {
+    queue.clear();
+  }
+
+  function setContainer(newContainer: HTMLElement) {
+    container = newContainer;
+  }
+
+  async function setFen(newFen: string, animate = false) {
+    if (newFen === fen) return;
+    fen = newFen;
+    const newSquares = stringToFen(fen);
+    let dur = animate ? duration : 0;
+    if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
+
+    return queue
+      .addTask(() => runAnimate(squares, newSquares, dur, orientation))
+      .then(() => redraw(newSquares, orientation, true));
+  }
+
+  async function setOrientation(newOrientation: Color, animate = false) {
+    if (newOrientation === orientation) return;
+    orientation = newOrientation;
+
+    let dur = animate ? duration : 0;
+    if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
+
+    const fromTask = queue.addTask(() => runAnimate(squares, [], dur, orientation));
+    const toTask = queue.addTask(() => runAnimate([], squares, dur, orientation));
+    return Promise.all([fromTask.then(() => onOrientationChange?.(orientation)), toTask]).then(() =>
+      redraw(squares, orientation, true)
+    );
+  }
+
+  function setDuration(newDuration: number) {
+    duration = newDuration;
+  }
+
+  function setIsAlphaPiece(newAlphaPiece: boolean) {
+    isAlphaPiece = newAlphaPiece;
   }
 
   return {
@@ -367,6 +377,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     setOrientation,
     setIsAlphaPiece,
     setContainer,
+    terminate,
   };
 }
 
