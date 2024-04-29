@@ -1,14 +1,16 @@
 <template>
   <Transition name="promotion-dialog">
-    <div v-if="coord" class="promotion-dialog pieces" :class="pieceSet">
+    <div v-if="coord" class="promotion-dialog">
       <button
         v-for="(piece, i) in ['q', 'r', 'b', 'n']"
         :key="i"
-        class="piece promotion-piece"
-        :class="`${pieceColor}${piece}`"
+        class="promotion-piece"
+        :class="pieceSet"
         :style="{ transform: `translate(${coord.x * 100}%, ${i * 100}%)` }"
         @pointerdown.stop="resolveHandler(piece)"
-      ></button>
+      >
+        <piece :class="`${pieceColor}${piece}`"></piece>
+      </button>
     </div>
   </Transition>
 </template>
@@ -60,10 +62,26 @@ defineExpose({ require, abort });
 
   .promotion-piece {
     position: absolute;
+    top: 0;
+    left: 0;
+    width: 12.5%;
+    height: 12.5%;
+    will-change: transform;
+    z-index: 100;
+
     background: #838383c8;
     transition: background 0.2s ease-in-out;
     &:hover {
       background: #383838d8;
+    }
+
+    piece {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-size: cover;
+      width: 100%;
+      height: 100%;
     }
   }
 

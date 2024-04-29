@@ -100,7 +100,7 @@ watch(
   { deep: true }
 );
 
-const color = ref<Color>();
+const color = ref<Color>(props.orientation);
 const boardSet = toRef(props, "boardSet");
 const pieceSet = toRef(props, "pieceSet");
 provide("chessboard", chessboard);
@@ -181,18 +181,17 @@ defineExpose({
       }
       .pieces {
         display: contents;
-      }
-
-      piece {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 12.5%;
-        height: 12.5%;
-        background-size: cover;
-        z-index: 5;
-        will-change: transform, opacity;
-        // pointer-events: none;
+        & > piece {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 12.5%;
+          height: 12.5%;
+          background-size: cover;
+          z-index: 5;
+          will-change: transform, opacity;
+          // pointer-events: none;
+        }
       }
     }
   }
