@@ -251,7 +251,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
       let frameHandle: number | null = null;
       let startTime: number;
       function animationStep(time: number) {
-        console.log("animationStep", time);
+        // console.log("animationStep", time);
         if (!queue.IsRunning || document.hidden) return resolve();
 
         isValid = false;
@@ -262,7 +262,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
             cancelAnimationFrame(frameHandle);
             frameHandle = null;
           }
-          console.log("ANIMATION FINISHED");
+          // console.log("ANIMATION FINISHED");
           for (const animatedItem of animatedElements) {
             // fix bug z-index
             animatedItem.element.style.zIndex = "5";
@@ -337,7 +337,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
   }
 
   async function setFen(newFen: string, animate = false) {
-    if (newFen === fen) return;
+    if (newFen === fen) return Promise.resolve();
     fen = newFen;
     const newSquares = stringToFen(fen);
     let dur = animate ? duration : 0;
@@ -349,7 +349,8 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
   }
 
   async function setOrientation(newOrientation: Color, animate = false) {
-    if (newOrientation === orientation) return;
+    if (newOrientation === orientation) return Promise.resolve();
+
     orientation = newOrientation;
 
     let dur = animate ? duration : 0;
