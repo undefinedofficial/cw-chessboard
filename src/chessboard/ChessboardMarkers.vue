@@ -1,6 +1,6 @@
 <template>
   <div class="markers">
-    <template v-for="(marker, i) of markers" :key="marker.id || i">
+    <template v-for="(marker, i) of markers" :key="i">
       <ChessboardSquare v-if="marker.type === MARKER.DOT" class="marker" :square="marker.square">
         <div class="marker-dot" :class="marker.color || 'default'"></div>
       </ChessboardSquare>
