@@ -25,8 +25,8 @@
           borderRadius: boardRoundScale,
         }"
       >
-        <div ref="piecesContainer" class="pieces" :class="pieceSet"></div>
         <slot />
+        <div ref="piecesContainer" class="pieces" :class="pieceSet"></div>
       </div>
     </div>
     <ChessboardCoords
@@ -179,25 +179,20 @@ defineExpose({
         border-width: 1px;
         border-style: solid;
       }
-
       .pieces {
-        pointer-events: none;
-        will-change: transform, opacity;
+        display: contents;
+      }
 
+      piece {
         position: absolute;
-        top: -1px;
+        top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 10;
-        .piece {
-          position: absolute;
-          display: block;
-          height: 12.5%;
-          width: 12.5%;
-          background-repeat: no-repeat;
-          background-size: contain;
-        }
+        width: 12.5%;
+        height: 12.5%;
+        background-size: cover;
+        z-index: 5;
+        will-change: transform, opacity;
+        // pointer-events: none;
       }
     }
   }

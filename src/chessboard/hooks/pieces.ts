@@ -16,7 +16,7 @@ interface PearedList {
 
 interface AnimatedElement {
   type: CHANGE_TYPE;
-  element: HTMLDivElement;
+  element: HTMLElement;
   atPoint?: Point;
   toPoint?: Point;
 }
@@ -126,7 +126,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
   const getPieceByPoint = (p: Point) => getPieceByIndex(pointToIndex(p));
 
   function createPieceElement(to: Point, piece: PieceSymbol, orientation: Color) {
-    const element = document.createElement("div");
+    const element = document.createElement("piece");
     const point = invertPoint(to, orientation);
     const figure = piece.toLowerCase();
     const dataPiece = (figure === piece ? "b" : "w") + figure;
@@ -332,7 +332,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
 
     return queue
-      .addTask(() => runAnimate(squares, newSquares, dur, orientation))
+      .addTask(() => runAnimate(new Array(...squares), newSquares, dur, orientation))
       .then(() => redraw(newSquares, orientation, true));
   }
 
@@ -343,9 +343,11 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     let dur = animate ? duration : 0;
     if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
 
-    return queue
-      .addTask(() => runAnimate(squares, newSquares, dur, orientation))
-      .then(() => redraw(newSquares, orientation, true));
+    return queue.addTask(() =>
+      runAnimate([...squares], newSquares, dur, orientation).then(() =>
+        redraw(newSquares, orientation, true)
+      )
+    );
   }
 
   async function setOrientation(newOrientation: Color, animate = false) {
@@ -356,11 +358,13 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     let dur = animate ? duration : 0;
     if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
 
-    const fromTask = queue.addTask(() => runAnimate(squares, [], dur, orientation));
-    const toTask = queue.addTask(() => runAnimate([], squares, dur, orientation));
-    return Promise.all([fromTask.then(() => onOrientationChange?.(orientation)), toTask]).then(() =>
-      redraw(squares, orientation, true)
+    const fromTask = queue.addTask(() => runAnimate(new Array(...squares), [], dur, orientation));
+    const toTask = queue.addTask(() =>
+      runAnimate([], new Array(...squares), dur, orientation).then(() =>
+        redraw(squares, orientation, true)
+      )
     );
+    return Promise.all([fromTask.then(() => onOrientationChange?.(orientation)), toTask]);
   }
 
   function setDuration(newDuration: number) {

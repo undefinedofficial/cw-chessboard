@@ -1,13 +1,13 @@
 <template>
   <div class="pieces move-field" :class="pieceSet">
-    <div
+    <piece
       v-if="activePiece"
-      class="piece"
-      :class="activePiece.color + activePiece.name"
+      :class="['active', activePiece.color + activePiece.name]"
       :style="{
         transform: `translate(${activePiece.x}px, ${activePiece.y}px)`,
+        'z-index': 100,
       }"
-    ></div>
+    ></piece>
   </div>
 </template>
 
@@ -214,12 +214,10 @@ useControl({
 </script>
 
 <style lang="scss">
-.pieces.move-field {
-  display: contents;
-  pointer-events: all;
-  cursor: move;
-  .piece {
-    z-index: 100;
+.pieces > piece {
+  cursor: grab;
+  &.active {
+    cursor: grabbing;
   }
 }
 </style>
