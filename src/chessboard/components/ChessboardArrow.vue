@@ -69,7 +69,7 @@ const to = computed(() =>
 <style>
 .marker-arrow {
   position: absolute;
-  z-index: 5;
+  z-index: 10;
 }
 
 .arrow-head {

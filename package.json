@@ -1,7 +1,7 @@
 {
   "name": "cw-chessboard",
   "description": "Simple and Fast Typescript Vue Chessboard from chesswood.online with more plugins",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "files": [
     "src/chessboard/*"
   ],
