@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="container"
     class="cw-chessboard chessboard-theme"
     :class="boardSet"
     :style="{
@@ -66,6 +67,13 @@ const emit = defineEmits<{
   ready: [ChessboardPieces];
   moves: [moves: ChangeEvent[]];
 }>();
+const container = ref<HTMLElement | null>(null);
+
+/**
+ * Get the chessboard root element
+ */
+const getElement = () => container.value;
+
 const wrapper = ref<HTMLElement | null>(null);
 const chessboard = ref<HTMLElement | null>(null);
 const { size, Rescale } = useRescale(
@@ -103,6 +111,7 @@ watch(
 const color = ref<Color>(props.orientation);
 const boardSet = toRef(props, "boardSet");
 const pieceSet = toRef(props, "pieceSet");
+provide("container", container);
 provide("chessboard", chessboard);
 provide("orientation", color);
 provide("pieces", pieces);
@@ -118,11 +127,7 @@ onMounted(() => {
   emit("ready", pieces);
 });
 
-defineExpose({
-  boardSize: size,
-  Rescale,
-  pieces,
-});
+defineExpose({ getElement, boardSize: size, Rescale, pieces });
 </script>
 
 <style lang="scss">
