@@ -26,7 +26,7 @@ const floatingStyles = computed(() => {
 <style lang="scss">
 .cw-chessboard-square {
   position: absolute;
-  top: 1px;
+  top: 0;
   left: 0;
   width: 12.5%;
   height: 12.5%;
