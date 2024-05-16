@@ -6,18 +6,11 @@
     :style="{
       width: boardSize,
       height: boardSize,
-      fontSize: fontScale,
+      fontSize: fontScalePx,
     }"
   >
     <slot name="before" />
-    <div
-      ref="wrapper"
-      class="cw-wrapper"
-      :style="{
-        borderRadius: boardRoundScale,
-        borderWidth: borderScale,
-      }"
-    >
+    <div ref="wrapper" class="cw-wrapper" :style="cwWrapperStyles">
       <div
         ref="chessboard"
         class="cw-container"
@@ -82,10 +75,29 @@ const { size, Rescale } = useRescale(
 );
 
 const ratioSize = computed(() => size.value / 900);
+
 const boardSize = computed(() => `${size.value}px`);
 const boardRoundScale = computed(() => `${props.roundSize * ratioSize.value}px`);
-const borderScale = computed(() => `${(props.borderSize - 1) * ratioSize.value}px`);
-const fontScale = computed(() => `${props.fontSize * ratioSize.value}px`);
+
+const fontScale = computed(() => props.fontSize * ratioSize.value);
+const fontScalePx = computed(() => `${fontScale.value.toFixed(3)}px`);
+
+const isBorderHide = computed(() => props.coordOutside && fontScale.value / 1.8 > props.borderSize);
+
+const borderScale = computed(
+  () => `${(isBorderHide.value ? props.fontSize / 1.5 : props.borderSize - 1) * ratioSize.value}px`
+);
+
+const cwWrapperStyles = computed(() => ({
+  borderRadius: boardRoundScale.value,
+  borderWidth: borderScale.value,
+  ...(isBorderHide.value
+    ? {
+        borderColor: "transparent",
+        backgroundColor: "transparent",
+      }
+    : {}),
+}));
 
 const piecesContainer = ref<HTMLElement | null>(null);
 const pieces = usePieces({
