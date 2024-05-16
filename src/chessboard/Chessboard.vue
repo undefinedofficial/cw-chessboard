@@ -10,7 +10,7 @@
     }"
   >
     <slot name="before" />
-    <div ref="wrapper" class="cw-wrapper" :style="cwWrapperStyles">
+    <div ref="wrapper" class="cw-wrapper" :style="borderStyles">
       <div
         ref="chessboard"
         class="cw-container"
@@ -24,9 +24,7 @@
       </div>
     </div>
     <ChessboardCoords
-      :style="{
-        margin: borderScale,
-      }"
+      :borderScale="borderScale"
       :coordMode="coordMode"
       :orientation="orientation"
       :coordOutside="coordOutside"
@@ -76,28 +74,36 @@ const { size, Rescale } = useRescale(
 
 const ratioSize = computed(() => size.value / 900);
 
-const boardSize = computed(() => `${size.value}px`);
+const fontScale = computed(() => props.fontSize * ratioSize.value);
+
+const isContainBorder = computed(() => fontScale.value / 1.5 < props.borderSize);
+
+const borderScale = computed(() => {
+  if (!props.coordOutside || isContainBorder.value)
+    return `${(props.borderSize * ratioSize.value).toFixed(2)}px`;
+
+  const borderSize = !isContainBorder.value ? props.fontSize / 1.5 : props.borderSize;
+
+  return `${(borderSize * ratioSize.value).toFixed(2)}px`;
+});
+
 const boardRoundScale = computed(() => `${props.roundSize * ratioSize.value}px`);
 
-const fontScale = computed(() => props.fontSize * ratioSize.value);
+const borderStyles = computed(() => {
+  return {
+    borderRadius: boardRoundScale.value,
+    borderWidth: borderScale.value,
+    ...(isContainBorder.value
+      ? {}
+      : {
+          borderColor: "transparent",
+          backgroundColor: "transparent",
+        }),
+  };
+});
+
+const boardSize = computed(() => `${size.value}px`);
 const fontScalePx = computed(() => `${fontScale.value.toFixed(3)}px`);
-
-const isBorderHide = computed(() => props.coordOutside && fontScale.value / 1.8 > props.borderSize);
-
-const borderScale = computed(
-  () => `${(isBorderHide.value ? props.fontSize / 1.5 : props.borderSize - 1) * ratioSize.value}px`
-);
-
-const cwWrapperStyles = computed(() => ({
-  borderRadius: boardRoundScale.value,
-  borderWidth: borderScale.value,
-  ...(isBorderHide.value
-    ? {
-        borderColor: "transparent",
-        backgroundColor: "transparent",
-      }
-    : {}),
-}));
 
 const piecesContainer = ref<HTMLElement | null>(null);
 const pieces = usePieces({

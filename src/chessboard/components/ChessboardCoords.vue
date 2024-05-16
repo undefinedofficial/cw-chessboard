@@ -1,5 +1,11 @@
 <template>
-  <div class="chessboard-coords" v-if="isShow">
+  <div
+    v-if="isShow"
+    class="chessboard-coords"
+    :style="{
+      margin: borderScale,
+    }"
+  >
     <div
       class="coords numbers"
       :class="{
@@ -32,6 +38,7 @@ import type { Color, CoordMode } from "../types";
 const props = defineProps<{
   orientation: Color;
   coordMode: CoordMode;
+  borderScale: string;
   coordOutside?: boolean;
 }>();
 
