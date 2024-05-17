@@ -15,6 +15,7 @@
 import { ref, inject, type Ref } from "vue";
 import type { Color, InputColor, Piece, Point } from "./types";
 import {
+  invertPoint,
   normalizePoint,
   pointEqual,
   pointToSquare,
@@ -143,8 +144,9 @@ useControl({
         y: halfY,
       };
     } else {
-      const alignX = fromSquare.x * squareWidth;
-      const alignY = fromSquare.y * squareHeight;
+      const { x, y } = invertPoint(fromSquare, orientation.value);
+      const alignX = x * squareWidth;
+      const alignY = y * squareHeight;
       activePiece.value = {
         name: fromSquare.name,
         color: fromSquare.color,
