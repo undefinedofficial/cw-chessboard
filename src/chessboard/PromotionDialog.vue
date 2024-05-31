@@ -8,9 +8,8 @@
         :class="pieceSet"
         :style="{ transform: `translate(${coord.x * 100}%, ${i * 100}%)` }"
         @pointerdown.stop="resolveHandler(piece)"
-      >
-        <piece :class="`${pieceColor}${piece}`"></piece>
-      </button>
+        v-html="`<piece class=&quot;${pieceColor}${piece}&quot;></piece>`"
+      ></button>
     </div>
   </Transition>
 </template>

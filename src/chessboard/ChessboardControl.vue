@@ -1,14 +1,12 @@
 <template>
-  <div class="pieces move-field" :class="pieceSet">
-    <piece
-      v-if="activePiece"
-      :class="['active', activePiece.color + activePiece.name]"
-      :style="{
-        transform: `translate(${activePiece.x}px, ${activePiece.y}px)`,
-        'z-index': 100,
-      }"
-    ></piece>
-  </div>
+  <div
+    class="pieces move-field"
+    :class="pieceSet"
+    v-if="activePiece"
+    v-html="
+      `<piece class=&quot;active ${activePiece.color}${activePiece.name}&quot; style=&quot;transform: translate(${activePiece.x}px, ${activePiece.y}px);z-index: 100&quot;></piece>`
+    "
+  ></div>
 </template>
 
 <script lang="ts" setup>
