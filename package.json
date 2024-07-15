@@ -1,7 +1,7 @@
 {
   "name": "cw-chessboard",
   "description": "Simple and Fast Typescript Vue Chessboard from chesswood.online with more plugins",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "files": [
     "src/chessboard/*"
   ],
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/undefinedofficial/cw-chessboard.git"
+    "url": "https://github.com/undefinedofficial/cw-chessboard.git"
   },
   "keywords": [
     "chess",
