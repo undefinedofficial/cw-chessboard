@@ -10,7 +10,7 @@
     }"
   >
     <slot name="before" />
-    <div ref="wrapper" class="cw-wrapper" :style="borderStyles">
+    <div class="cw-wrapper" :style="borderStyles">
       <div
         ref="chessboard"
         class="cw-container"
@@ -65,10 +65,10 @@ const container = ref<HTMLElement | null>(null);
  */
 const getElement = () => container.value;
 
-const wrapper = ref<HTMLElement | null>(null);
+// const wrapper = ref<HTMLElement | null>(null);
 const chessboard = ref<HTMLElement | null>(null);
 const { size, Rescale } = useRescale(
-  computed(() => wrapper.value!.parentElement!.parentElement),
+  computed(() => container.value!.parentElement),
   toRef(props, "resize")
 );
 
@@ -176,7 +176,7 @@ defineExpose({ getElement, boardSize: size, Rescale, pieces });
     width: 100%;
     height: 100%;
     border-style: solid;
-    overflow: hidden;
+    // overflow: hidden;
     box-sizing: border-box;
 
     .cw-container {
@@ -213,6 +213,7 @@ defineExpose({ getElement, boardSize: size, Rescale, pieces });
           background-size: cover;
           z-index: 5;
           will-change: transform, opacity;
+          user-select: none;
           // pointer-events: none;
         }
       }

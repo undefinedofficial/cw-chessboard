@@ -35,6 +35,8 @@
         @cancelMove="onCancelMove($event), selectMarkers('selected'), selectMarkers('active')"
         @enterSquare="onEnterSquare($event), selectMarkers('active', MARKER.FRAME, [$event])"
         @leaveSquare="onLeaveSquare($event), selectMarkers('active')"
+        @dropMove="onDropMove"
+        @dropEnd="onDropEnd"
       />
       <PromotionDialog ref="promotionDialogEl" />
     </Chessboard>
@@ -198,6 +200,19 @@
         min="0"
         max="9"
       />
+
+      <div class="flex flex-col items-center space-y-3">
+        pieces packs
+        <div class="h-64 flex space-x-3">
+          <ChessboardPiece
+            v-for="piece in pieces"
+            :pieceSet="piece"
+            class="w-16 h-16"
+            piece="Q"
+            draggable
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -216,6 +231,7 @@ import {
   ChessboardControl,
   ChessboardSquare,
   PromotionDialog,
+  ChessboardPiece,
 } from "cw-chessboard/index";
 import ControlRadio from "./ControlRadio.vue";
 import ControlRange from "./ControlRange.vue";
@@ -263,6 +279,8 @@ const markers = ref<(Marker & { id?: string })[]>([
   { type: MARKER.CIRCLE, color: "blue", square: "a3" },
   { type: MARKER.SQUARE, color: "red", square: "b6" },
   { type: MARKER.ARROW, color: "blue", square: "b3", toSquare: "b4" },
+  { type: MARKER.SQUARE, color: "blue", square: "f5" },
+  { type: MARKER.SQUARE, color: "blue", square: "f4" },
 ]);
 
 const markerSize = ref(0);
@@ -289,6 +307,7 @@ const selectMarkers = (
 
 const onBeforeMove = (square: string, done: (accept: boolean) => void) => {
   console.log("BeforeMove: ", square);
+  selectMarkers("drop");
 
   const moves = chess.moves({ square, verbose: true });
   if (moves.length === 0) return done(false);
@@ -327,6 +346,16 @@ const onEnterSquare = (square: string) => {
 };
 const onLeaveSquare = (square: string) => {
   console.log("LeaveSquare: ", square);
+};
+
+const onDropMove = (square: string) => {
+  console.log("DropMove: ", square);
+  selectMarkers("drop", MARKER.FRAME, [square]);
+};
+
+const onDropEnd = (piece: string, square: string) => {
+  alert("DropEnd: " + piece + " " + square);
+  selectMarkers("drop");
 };
 </script>
 

@@ -10,7 +10,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, inject, type Ref } from "vue";
+import { ref, inject, type Ref, onMounted, onBeforeUnmount } from "vue";
 import type { Color, InputColor, Piece, Point } from "./types";
 import {
   invertPoint,
@@ -22,6 +22,7 @@ import {
 } from "./utils/point";
 import type { ChessboardPieces } from "./hooks/pieces";
 import { useControl } from "./hooks/control";
+import { getPointInElement } from "./utils";
 
 export interface ChessboardControlProps {
   mode?: "auto" | "move" | "press";
@@ -39,10 +40,14 @@ const emits = defineEmits<{
   cancelMove: [square: string];
   enterSquare: [square: string];
   leaveSquare: [square: string];
+
+  dropMove: [square: string];
+  dropEnd: [piece: string, square: string];
 }>();
 
 const DRAGGING_SENSITIVE = 32;
 
+const container = inject<Ref<HTMLDivElement>>("container")!;
 const chessboard = inject<Ref<HTMLDivElement>>("chessboard")!;
 const pieces = inject<ChessboardPieces>("pieces")!;
 const pieceSet = inject<Ref<string>>("pieceSet")!;
@@ -210,6 +215,44 @@ useControl({
   onCancel: () => {
     if (fromSquare) onCancelMove(fromSquare, true);
   },
+});
+
+function onDrop(e: DragEvent) {
+  const el = e.currentTarget as HTMLElement;
+  const data = e.dataTransfer?.getData("text/plain");
+
+  if (!data?.includes("piece ")) return;
+
+  const point = getPointInElement(el, e);
+  const square = pointToSquare(point, orientation.value, point);
+
+  if (!squareValid(square)) return;
+
+  const piece = data.split(" ")[1];
+
+  emits("dropEnd", piece, squareToString(square));
+}
+
+function onDragOver(e: DragEvent) {
+  e.preventDefault();
+
+  const el = e.currentTarget as HTMLElement;
+  const point = getPointInElement(el, e);
+  const square = pointToSquare(point, orientation.value, point);
+
+  if (!squareValid(square)) return;
+
+  emits("dropMove", squareToString(square));
+}
+
+onMounted(() => {
+  chessboard.value.addEventListener("drop", onDrop);
+  chessboard.value.addEventListener("dragover", onDragOver);
+});
+
+onBeforeUnmount(() => {
+  chessboard.value.removeEventListener("drop", onDrop);
+  chessboard.value.removeEventListener("dragover", onDragOver);
 });
 </script>
 

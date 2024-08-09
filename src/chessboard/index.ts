@@ -6,6 +6,7 @@ import PromotionDialog from "./PromotionDialog.vue";
 import ChessboardControl from "./ChessboardControl.vue";
 import ChessboardMarkers from "./ChessboardMarkers.vue";
 import ChessboardSquare from "./ChessboardSquare.vue";
+import ChessboardPiece from "./ChessboardPiece.vue";
 import type { ChessboardPieces } from "./hooks/pieces";
 
 export {
@@ -14,5 +15,6 @@ export {
   ChessboardControl,
   ChessboardMarkers,
   ChessboardSquare,
+  ChessboardPiece,
   type ChessboardPieces,
 };
