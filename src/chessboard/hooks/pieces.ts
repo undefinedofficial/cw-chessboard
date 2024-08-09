@@ -142,7 +142,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     const figure = piece.toLowerCase();
     const stringSquare = squareToString(to);
     const dataPiece = (figure === piece ? "b" : "w") + figure;
-    const element: any = container!.querySelector(
+    const element: any = container?.querySelector(
       `[data-piece="${dataPiece}"][data-square="${stringSquare}"]`
     );
 
@@ -244,7 +244,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     orientation: Color
   ): Promise<void> {
     return new Promise<void>((resolve) => {
-      if (document.hasFocus?.() === false) return resolve();
+      if (document.hasFocus?.() === false || !container) return resolve();
 
       const animatedElements = createAnimation(fromSquares, toSquares, orientation);
 
