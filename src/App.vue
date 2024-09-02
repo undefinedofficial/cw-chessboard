@@ -12,6 +12,7 @@
       :alphaPiece="alphaPiece"
       :boardSet="boardSet"
       :pieceSet="piecesSet"
+      :visibility="visibility"
       :resize="true"
       ref="chessboardEl"
     >
@@ -66,6 +67,12 @@
         name="orientation"
         :items="['w', 'b']"
         v-model="orientation"
+      />
+      <ControlRadio
+        title="visibility"
+        name="visibility"
+        v-model="visibility"
+        :items="['none', 'w', 'b', 'all']"
       />
       <div>
         board pack
@@ -246,6 +253,7 @@ const pieces = ["default", "grady", "staunty", "stock"];
 const boardSet = ref("default");
 const piecesSet = ref("grady");
 
+const visibility = ref<InputColor>("all");
 const turn = ref<InputColor>("w");
 const fen = ref(chess.fen());
 

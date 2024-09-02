@@ -34,7 +34,7 @@ export type MovePieceFunction = (
   type?: string
 ) => Promise<void>;
 
-export type CoordMode = "none" | "left" | "right";
+export type CoordMode = "none" | "left" | "right"; // | "double";
 
 export type ChessboardResize = true | false | "width" | "height";
 
@@ -50,7 +50,10 @@ export interface ChessboardProps {
   alphaPiece?: boolean;
   boardSet?: string;
   pieceSet?: string;
+  pieceWhiteSet?: string;
+  pieceBlackSet?: string;
   resize?: ChessboardResize;
+  visibility?: InputColor;
 }
 
 export interface PieceMove {

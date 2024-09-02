@@ -1,5 +1,5 @@
 import { indexToPoint, stringToFen, type SquareType, pointToIndex } from "./fen";
-import type { Color, ChangeEvent, PieceSymbol, Point } from "../types";
+import type { Color, ChangeEvent, PieceSymbol, Point, InputColor } from "../types";
 import { invertPoint, squareToString } from "../utils/point";
 import { PromiseQueue } from "./queue";
 
@@ -115,6 +115,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
   let orientation: Color = "w";
   let isAlphaPiece = false;
   let squares: SquareType[] = [];
+  let visibility: InputColor = "all";
 
   const getPieceByIndex = (idx: number): null | PieceSquare => {
     const square = squares[idx];
@@ -129,13 +130,17 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     const element = document.createElement("piece");
     const point = invertPoint(to, orientation);
     const figure = piece.toLowerCase();
-    const dataPiece = (figure === piece ? "b" : "w") + figure;
+    const color = figure === piece ? "b" : "w";
+    const dataPiece = color + figure;
     element.setAttribute("data-square", squareToString(to));
     element.setAttribute("data-piece", dataPiece);
+    element.setAttribute("data-color", color);
     element.classList.add("piece", dataPiece);
     element.style.transform = `translate(${point.x * 100}%, ${point.y * 100}%)`;
     element.style.zIndex = "5";
     element.style.opacity = "1";
+    // chess invisible
+    element.style.display = visibility === "all" || visibility === color ? "block" : "none";
     return element;
   }
   function getPieceElement(to: Point, piece: PieceSymbol): HTMLDivElement | null {
@@ -201,6 +206,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
         case CHANGE_TYPE.ADD:
           const element = createPieceElement(at, change.piece, orientation);
           element.style.opacity = "0";
+          element.style.display = "block";
           container!.appendChild(element);
           const atPoint = invertPoint(indexToPoint(change.atIndex), orientation);
           animatedElements.push({
@@ -337,7 +343,8 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
   }
 
   async function setFen(newFen: string, animate = false) {
-    if (newFen === fen) return Promise.resolve();
+    if (newFen === fen) return;
+
     fen = newFen;
     const newSquares = stringToFen(fen);
     let dur = animate ? duration : 0;
@@ -351,7 +358,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
   }
 
   async function setOrientation(newOrientation: Color, animate = false) {
-    if (newOrientation === orientation) return Promise.resolve();
+    if (newOrientation === orientation) return;
 
     orientation = newOrientation;
 
@@ -375,6 +382,33 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     isAlphaPiece = newAlphaPiece;
   }
 
+  async function setVisibility(newVisibility: InputColor, animate = false) {
+    if (visibility === newVisibility) return;
+
+    let dur = animate ? duration : 0;
+    if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
+
+    let oldSquares = visibility === "none" ? new Array(64).fill(null) : [...squares];
+    let newSquares: SquareType[];
+    if (newVisibility === "all") {
+      oldSquares = new Array(64).fill(null);
+      newSquares = [...squares];
+    } else if (newVisibility === "none") {
+      newSquares = new Array(64).fill(null);
+    } else if (newVisibility === "w") {
+      newSquares = squares.map((square) => (square?.toUpperCase() === square ? square : null));
+    } else if (newVisibility === "b") {
+      newSquares = squares.map((square) => (square?.toLowerCase() === square ? square : null));
+    }
+    visibility = newVisibility;
+
+    return queue.addTask(() =>
+      runAnimate(oldSquares, newSquares, dur, orientation).then(() =>
+        redraw(squares, orientation, true)
+      )
+    );
+  }
+
   return {
     getPieceByIndex,
     getPieceByPoint,
@@ -385,6 +419,7 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     setOrientation,
     setIsAlphaPiece,
     setContainer,
+    setVisibility,
     terminate,
   };
 }

@@ -36,7 +36,7 @@
 <script lang="ts" setup>
 import "./style/main.scss";
 import type { ChessboardProps, ChangeEvent, Color } from "./types";
-import { ref, computed, toRef, provide, onMounted, onUnmounted, watch } from "vue";
+import { ref, computed, toRef, provide, onMounted, watch } from "vue";
 import ChessboardCoords from "./components/ChessboardCoords.vue";
 import { useRescale } from "./hooks/rescale";
 import { usePieces } from "./hooks/pieces";
@@ -52,6 +52,7 @@ const props = withDefaults(defineProps<ChessboardProps>(), {
   boardSet: "default",
   pieceSet: "default",
   resize: true,
+  visibility: "all",
 });
 
 const emit = defineEmits<{
@@ -117,9 +118,10 @@ const pieces = usePieces({
 
 watch(
   props,
-  async ({ fen, orientation, alphaPiece, duration }) => {
+  async ({ fen, orientation, alphaPiece, duration, visibility }) => {
     if (fen) pieces.setFen(fen, true);
-    if (orientation) pieces.setOrientation(orientation, true);
+    pieces.setOrientation(orientation, true);
+    pieces.setVisibility(visibility, true);
     pieces.setIsAlphaPiece(alphaPiece);
     pieces.setDuration(duration);
   },
@@ -138,9 +140,10 @@ provide("pieceSet", pieceSet);
 
 onMounted(() => {
   pieces.setContainer(piecesContainer.value!);
+  pieces.setDuration(props.duration);
   if (props.fen) pieces.setFen(props.fen);
   pieces.setOrientation(props.orientation);
-  pieces.setDuration(props.duration);
+  pieces.setVisibility(props.visibility);
   pieces.setIsAlphaPiece(props.alphaPiece);
   emit("ready", pieces);
 });
