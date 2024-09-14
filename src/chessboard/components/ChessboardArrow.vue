@@ -7,7 +7,7 @@
   >
     <defs>
       <marker
-        id="arrow"
+        :id="pointerId"
         class="arrow-head"
         refX="19"
         refY="20"
@@ -35,7 +35,7 @@
       :y1="from.y"
       :x2="to.x"
       :y2="to.y"
-      marker-end="url(#arrow)"
+      :marker-end="`url(#${pointerId})`"
       stroke="currentColor"
       :stroke-width="size * 1.5"
       stroke-linecap="round"
@@ -55,6 +55,8 @@ const props = defineProps<{
   color: string;
   size: number;
 }>();
+
+const pointerId = computed(() => `arrow-${props.color}-${props.size}`);
 
 const orientation = inject<Ref<Color>>("orientation")!;
 
