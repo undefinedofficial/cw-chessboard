@@ -15,16 +15,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, type Ref, ref, Transition } from "vue";
+import { computed, type Ref, ref, Transition } from "vue";
 import type { Color, SquarePoint } from "./types";
 import { invertPoint, stringToSquare } from "./utils/point";
+import { useContext } from "./hooks/context";
 
 const props = defineProps<{
   color?: Color;
 }>();
 
-const pieceSet = inject<string>("pieceSet")!;
-const orientation = inject<Ref<Color>>("orientation")!;
+const { orientation, pieceSet } = useContext();
 
 const pieceColor = computed(() => props.color || orientation.value);
 

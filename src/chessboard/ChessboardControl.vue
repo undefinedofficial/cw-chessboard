@@ -4,13 +4,13 @@
     :class="pieceSet"
     v-if="activePiece"
     v-html="
-      `<piece class=&quot;active ${activePiece.color}${activePiece.name}&quot; style=&quot;transform: translate(${activePiece.x}px, ${activePiece.y}px);z-index: 100&quot;></piece>`
+      `<piece class=&quot;active ${activePiece.color}${activePiece.name}&quot; style=&quot;transform: translate3d(${activePiece.x}px, ${activePiece.y}px,0px);z-index: 100&quot;></piece>`
     "
   ></div>
 </template>
 
 <script lang="ts" setup>
-import { ref, inject, type Ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import type { Color, InputColor, Piece, Point } from "./types";
 import {
   invertPoint,
@@ -23,6 +23,8 @@ import {
 import type { ChessboardPieces } from "./hooks/pieces";
 import { useControl } from "./hooks/control";
 import { getPointInElement } from "./utils";
+import { useContext } from "./hooks/context";
+import type { Ref } from "vue";
 
 export interface ChessboardControlProps {
   mode?: "auto" | "move" | "press";
@@ -47,11 +49,7 @@ const emits = defineEmits<{
 
 const DRAGGING_SENSITIVE = 32;
 
-const container = inject<Ref<HTMLDivElement>>("container")!;
-const chessboard = inject<Ref<HTMLDivElement>>("chessboard")!;
-const pieces = inject<ChessboardPieces>("pieces")!;
-const pieceSet = inject<Ref<string>>("pieceSet")!;
-const orientation = inject<Ref<Color>>("orientation")!;
+const { chessboard, pieces, pieceSet, orientation } = useContext();
 
 let fromSquare: Piece | null = null;
 const activePiece = ref<Piece | null>(null);
@@ -90,7 +88,7 @@ function onCancelMove(from: Piece, emited = true) {
 }
 
 useControl({
-  el: chessboard,
+  el: chessboard as Ref<HTMLElement>,
   onStart: (point) => {
     holdPress = false;
     const square = pointToSquare(point, orientation.value, point);
@@ -246,13 +244,13 @@ function onDragOver(e: DragEvent) {
 }
 
 onMounted(() => {
-  chessboard.value.addEventListener("drop", onDrop);
-  chessboard.value.addEventListener("dragover", onDragOver);
+  chessboard.value?.addEventListener("drop", onDrop);
+  chessboard.value?.addEventListener("dragover", onDragOver);
 });
 
 onBeforeUnmount(() => {
-  chessboard.value.removeEventListener("drop", onDrop);
-  chessboard.value.removeEventListener("dragover", onDragOver);
+  chessboard.value?.removeEventListener("drop", onDrop);
+  chessboard.value?.removeEventListener("dragover", onDragOver);
 });
 </script>
 

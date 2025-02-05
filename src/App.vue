@@ -33,9 +33,9 @@
         :alignPiece="alignPiece"
         @beforeMove="onBeforeMove"
         @afterMove="onAfterMove"
-        @cancelMove="onCancelMove($event), selectMarkers('selected'), selectMarkers('active')"
-        @enterSquare="onEnterSquare($event), selectMarkers('active', MARKER.FRAME, [$event])"
-        @leaveSquare="onLeaveSquare($event), selectMarkers('active')"
+        @cancelMove="(onCancelMove($event), selectMarkers('selected'), selectMarkers('active'))"
+        @enterSquare="(onEnterSquare($event), selectMarkers('active', MARKER.FRAME, [$event]))"
+        @leaveSquare="(onLeaveSquare($event), selectMarkers('active'))"
         @dropMove="onDropMove"
         @dropEnd="onDropEnd"
       />

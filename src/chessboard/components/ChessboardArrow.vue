@@ -45,9 +45,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, type Ref } from "vue";
-import type { Color, Point } from "../types";
+import { computed, type Ref } from "vue";
+import type { Color } from "../types";
 import { invertPoint, pointHalfSquareNS, squareToPointNS, stringToSquare } from "../utils/point";
+import { useContext } from "../hooks/context";
 
 const props = defineProps<{
   square: string;
@@ -58,7 +59,7 @@ const props = defineProps<{
 
 const pointerId = computed(() => `arrow-${props.color}-${props.size}`);
 
-const orientation = inject<Ref<Color>>("orientation")!;
+const { orientation } = useContext();
 
 const from = computed(() =>
   pointHalfSquareNS(squareToPointNS(invertPoint(stringToSquare(props.square), orientation.value)))

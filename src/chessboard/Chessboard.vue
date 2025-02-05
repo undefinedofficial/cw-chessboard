@@ -15,9 +15,7 @@
         ref="chessboard"
         class="cw-container"
         :class="{ outside: coordOutside, contour: borderSize > 0 }"
-        :style="{
-          borderRadius: boardRoundScale,
-        }"
+        :style="{ borderRadius }"
       >
         <slot />
         <div ref="piecesContainer" class="pieces" :class="pieceSet"></div>
@@ -41,6 +39,7 @@ import ChessboardCoords from "./components/ChessboardCoords.vue";
 import { useRescale } from "./hooks/rescale";
 import { usePieces } from "./hooks/pieces";
 import type { ChessboardPieces } from "./hooks/pieces";
+import { provideContext } from "./hooks/context";
 
 const props = withDefaults(defineProps<ChessboardProps>(), {
   orientation: "w",
@@ -59,15 +58,14 @@ const emit = defineEmits<{
   ready: [ChessboardPieces];
   moves: [moves: ChangeEvent[]];
 }>();
-const container = ref<HTMLElement | null>(null);
+const container = ref<HTMLElement>();
 
 /**
  * Get the chessboard root element
  */
 const getElement = () => container.value;
 
-// const wrapper = ref<HTMLElement | null>(null);
-const chessboard = ref<HTMLElement | null>(null);
+const chessboard = ref<HTMLElement>();
 const { size, Rescale } = useRescale(
   computed(() => container.value!.parentElement),
   toRef(props, "resize")
@@ -88,24 +86,23 @@ const borderScale = computed(() => {
   return `${(borderSize * ratioSize.value).toFixed(2)}px`;
 });
 
-const boardRoundScale = computed(() => `${props.roundSize * ratioSize.value}px`);
+const borderRadius = computed(() => `${props.roundSize * ratioSize.value}px`);
 
-const borderStyles = computed(() => {
-  return {
-    borderRadius: boardRoundScale.value,
-    borderWidth: borderScale.value,
-    ...(isContainBorder.value
-      ? {}
-      : {
-          borderColor: "transparent",
-          backgroundColor: "transparent",
-        }),
-  };
-});
+const borderStyles = computed(() => ({
+  borderRadius: borderRadius.value,
+  borderWidth: borderScale.value,
+  ...(isContainBorder.value
+    ? {}
+    : {
+        borderColor: "transparent",
+        backgroundColor: "transparent",
+      }),
+}));
 
 const boardSize = computed(() => `${size.value}px`);
 const fontScalePx = computed(() => `${fontScale.value.toFixed(3)}px`);
 
+const color = ref<Color>(props.orientation);
 const piecesContainer = ref<HTMLElement | null>(null);
 const pieces = usePieces({
   onChange(moves) {
@@ -114,6 +111,7 @@ const pieces = usePieces({
   onOrientationChange(orientation) {
     color.value = orientation;
   },
+  onRenderPiece: props.onRenderPiece,
 });
 
 watch(
@@ -128,15 +126,14 @@ watch(
   { deep: true }
 );
 
-const color = ref<Color>(props.orientation);
-const boardSet = toRef(props, "boardSet");
-const pieceSet = toRef(props, "pieceSet");
-provide("container", container);
-provide("chessboard", chessboard);
-provide("orientation", color);
-provide("pieces", pieces);
-provide("boardSet", boardSet);
-provide("pieceSet", pieceSet);
+provideContext({
+  container,
+  chessboard,
+  orientation: color,
+  pieces,
+  boardSet: toRef(props, "boardSet"),
+  pieceSet: toRef(props, "pieceSet"),
+});
 
 onMounted(() => {
   pieces.setContainer(piecesContainer.value!);

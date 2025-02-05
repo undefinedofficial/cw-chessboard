@@ -1,5 +1,12 @@
 import { indexToPoint, stringToFen, type SquareType, pointToIndex } from "./fen";
-import type { Color, ChangeEvent, PieceSymbol, Point, InputColor } from "../types";
+import type {
+  Color,
+  ChangeEvent,
+  PieceSymbol,
+  Point,
+  InputColor,
+  RenderPieceCallback,
+} from "../types";
 import { invertPoint, squareToString } from "../utils/point";
 import { PromiseQueue } from "./queue";
 
@@ -42,8 +49,27 @@ interface PieceSquare {
 }
 
 interface UsePiecesOptions {
+  /**
+   * onOrientationChange
+   * @description orientation switch callback.
+   * @param orientation Color "w" | "b"
+   */
   onOrientationChange?: (orientation: Color) => void;
+  /**
+   * onChange
+   * @description callback before when piece move
+   * @param moves Array<ChangeEvent> changes pieces for the actual position.
+   */
   onChange?: (moves: ChangeEvent[]) => void;
+  /**
+   * onRenderPiece
+   * @description callback when render piece.
+   * @param square square coordinates.
+   * @param piece piece name.
+   * @param color piece color.
+   * @returns modify class string.
+   */
+  onRenderPiece?: RenderPieceCallback;
 }
 
 function squareDistance(index1: number, index2: number) {
@@ -108,7 +134,7 @@ const seekChanges = (fromSquares: SquareType[], toSquares: SquareType[]) => {
   return changes;
 };
 
-export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
+export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UsePiecesOptions) {
   let container: HTMLElement | null = null;
   let fen = "";
   let duration = 200;
@@ -132,15 +158,21 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
     const figure = piece.toLowerCase();
     const color = figure === piece ? "b" : "w";
     const dataPiece = color + figure;
-    element.setAttribute("data-square", squareToString(to));
+    const square = squareToString(to);
+
+    element.setAttribute("data-square", square);
     element.setAttribute("data-piece", dataPiece);
     element.setAttribute("data-color", color);
     element.classList.add("piece", dataPiece);
-    element.style.transform = `translate(${point.x * 100}%, ${point.y * 100}%)`;
+
+    element.style.transform = `translate3d(${point.x * 100}%,${point.y * 100}%,0px)`;
     element.style.zIndex = "5";
     element.style.opacity = "1";
     // chess invisible
     element.style.display = visibility === "all" || visibility === color ? "block" : "none";
+
+    const modifyClass = onRenderPiece?.(square, piece, color);
+    if (modifyClass) element.classList.add(modifyClass);
     return element;
   }
   function getPieceElement(to: Point, piece: PieceSymbol): HTMLDivElement | null {
@@ -291,16 +323,16 @@ export function usePieces({ onOrientationChange, onChange }: UsePiecesOptions) {
           animatedItem.element.style.zIndex = "15";
 
           switch (animatedItem.type) {
-            case CHANGE_TYPE.MOVE:
-              animatedItem.element.style.transform = `translate(${
+            case CHANGE_TYPE.MOVE: {
+              const x =
                 animatedItem.atPoint!.x +
-                (animatedItem.toPoint!.x - animatedItem.atPoint!.x) * progress
-              }%,
-                ${
-                  animatedItem.atPoint!.y +
-                  (animatedItem.toPoint!.y - animatedItem.atPoint!.y) * progress
-                }%`;
+                (animatedItem.toPoint!.x - animatedItem.atPoint!.x) * progress;
+              const y =
+                animatedItem.atPoint!.y +
+                (animatedItem.toPoint!.y - animatedItem.atPoint!.y) * progress;
+              animatedItem.element.style.transform = `translate3d(${x}%,${y}%,0px)`;
               break;
+            }
             case CHANGE_TYPE.ADD:
               animatedItem.element.style.opacity = (Math.round(progress * 100) / 100).toString();
               break;

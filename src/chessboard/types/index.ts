@@ -34,6 +34,8 @@ export type MovePieceFunction = (
   type?: string
 ) => Promise<void>;
 
+export type RenderPieceCallback = (square: string, piece: PieceSymbol, color: Color) => string;
+
 export type CoordMode = "none" | "left" | "right"; // | "double";
 
 export type ChessboardResize = true | false | "width" | "height";
@@ -54,6 +56,7 @@ export interface ChessboardProps {
   pieceBlackSet?: string;
   resize?: ChessboardResize;
   visibility?: InputColor;
+  onRenderPiece?: RenderPieceCallback;
 }
 
 export interface PieceMove {

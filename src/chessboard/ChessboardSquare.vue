@@ -5,9 +5,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, type Ref } from "vue";
+import { computed, type Ref } from "vue";
 import type { Color } from "./types";
 import { invertPoint, stringToSquare } from "./utils";
+import { useContext } from "./hooks/context";
 
 export interface ChessboardSquareProps {
   square: string;
@@ -15,7 +16,7 @@ export interface ChessboardSquareProps {
 }
 const props = defineProps<ChessboardSquareProps>();
 
-const orientation = inject<Ref<Color>>("orientation")!;
+const { orientation } = useContext();
 
 const floatingStyles = computed(() => {
   const { x, y } = invertPoint(stringToSquare(props.square), orientation.value);
