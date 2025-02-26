@@ -46,7 +46,7 @@ const isShow = computed(() => props.coordMode !== "none");
 const isRight = computed(() => props.coordMode === "right");
 </script>
 
-<style lang="scss">
+<style lang="postcss">
 .chessboard-coords {
   pointer-events: none;
   position: absolute;
@@ -54,6 +54,7 @@ const isRight = computed(() => props.coordMode === "right");
   right: 2px;
   top: 2px;
   bottom: 2px;
+  z-index: 3;
   .coords {
     pointer-events: none;
     position: absolute;
@@ -65,6 +66,15 @@ const isRight = computed(() => props.coordMode === "right");
       font-weight: bold;
       text-transform: uppercase;
       line-height: 100%;
+
+      &.white {
+        text-shadow: none;
+        color: var(--cw-coords-white);
+      }
+      &.black {
+        text-shadow: none;
+        color: var(--cw-coords-black);
+      }
     }
     &.numbers {
       display: block;

@@ -2,23 +2,29 @@
   <div
     ref="container"
     class="cw-chessboard chessboard-theme"
-    :class="boardSet"
     :style="{
       width: boardSize,
       height: boardSize,
       fontSize: fontScalePx,
+      '--cw-coords-white': coordWhite,
+      '--cw-coords-black': coordBlack,
     }"
   >
     <slot name="before" />
-    <div class="cw-wrapper" :style="borderStyles">
+    <div
+      class="cw-wrapper"
+      :style="{ borderRadius, background: borderColor, padding: borderScale }"
+    >
       <div
         ref="chessboard"
         class="cw-container"
-        :class="{ outside: coordOutside, contour: borderSize > 0 }"
+        :class="{ outside: coordOutside }"
         :style="{ borderRadius }"
       >
-        <slot />
-        <div ref="piecesContainer" class="pieces" :class="pieceSet"></div>
+        <div class="cw-chessboard-inner">
+          <slot />
+          <div ref="piecesContainer" class="pieces"></div>
+        </div>
       </div>
     </div>
     <ChessboardCoords
@@ -32,30 +38,31 @@
 </template>
 
 <script lang="ts" setup>
-import "./style/main.scss";
-import type { ChessboardProps, ChangeEvent, Color } from "./types";
-import { ref, computed, toRef, provide, onMounted, watch } from "vue";
-import ChessboardCoords from "./components/ChessboardCoords.vue";
-import { useRescale } from "./hooks/rescale";
-import { usePieces } from "./hooks/pieces";
-import type { ChessboardPieces } from "./hooks/pieces";
-import { provideContext } from "./hooks/context";
+import type { ChessboardProps, ChangeEvent, Color } from "../types";
+import { ref, computed, toRef, onMounted, watch } from "vue";
+import ChessboardCoords from "./ChessboardCoords.vue";
+import { useRescale } from "../hooks/rescale";
+import { usePieces } from "../hooks/pieces";
+import type { UseChessboardPieces } from "../hooks/pieces";
+import { provideContext } from "../hooks/context";
 
 const props = withDefaults(defineProps<ChessboardProps>(), {
   orientation: "w",
   borderSize: 12,
+  borderColor: "#692e2b",
   roundSize: 0,
   fontSize: 24,
   coordMode: "left",
+  coordWhite: "#c5a076",
+  coordBlack: "#ecdab9",
   duration: 300,
-  boardSet: "default",
-  pieceSet: "default",
   resize: true,
   visibility: "all",
+  piecePack: "default",
 });
 
 const emit = defineEmits<{
-  ready: [ChessboardPieces];
+  ready: [UseChessboardPieces];
   moves: [moves: ChangeEvent[]];
 }>();
 const container = ref<HTMLElement>();
@@ -75,7 +82,7 @@ const ratioSize = computed(() => size.value / 900);
 
 const fontScale = computed(() => props.fontSize * ratioSize.value);
 
-const isContainBorder = computed(() => fontScale.value / 1.5 < props.borderSize);
+const isContainBorder = computed(() => fontScale.value < props.borderSize);
 
 const borderScale = computed(() => {
   if (!props.coordOutside || isContainBorder.value)
@@ -87,17 +94,6 @@ const borderScale = computed(() => {
 });
 
 const borderRadius = computed(() => `${props.roundSize * ratioSize.value}px`);
-
-const borderStyles = computed(() => ({
-  borderRadius: borderRadius.value,
-  borderWidth: borderScale.value,
-  ...(isContainBorder.value
-    ? {}
-    : {
-        borderColor: "transparent",
-        backgroundColor: "transparent",
-      }),
-}));
 
 const boardSize = computed(() => `${size.value}px`);
 const fontScalePx = computed(() => `${fontScale.value.toFixed(3)}px`);
@@ -114,12 +110,16 @@ const pieces = usePieces({
   onRenderPiece: props.onRenderPiece,
 });
 
+const pieceWhitePack = computed(() => props.pieceWhitePack || props.piecePack);
+const pieceBlackPack = computed(() => props.pieceBlackPack || props.piecePack);
+
 watch(
   props,
   async ({ fen, orientation, alphaPiece, duration, visibility }) => {
     if (fen) pieces.setFen(fen, true);
     pieces.setOrientation(orientation, true);
     pieces.setVisibility(visibility, true);
+    pieces.setPiecePack(pieceWhitePack.value, pieceBlackPack.value, true);
     pieces.setIsAlphaPiece(alphaPiece);
     pieces.setDuration(duration);
   },
@@ -131,8 +131,8 @@ provideContext({
   chessboard,
   orientation: color,
   pieces,
-  boardSet: toRef(props, "boardSet"),
-  pieceSet: toRef(props, "pieceSet"),
+  pieceWhitePack,
+  pieceBlackPack,
 });
 
 onMounted(() => {
@@ -142,13 +142,17 @@ onMounted(() => {
   pieces.setOrientation(props.orientation);
   pieces.setVisibility(props.visibility);
   pieces.setIsAlphaPiece(props.alphaPiece);
+  pieces.setPiecePack(
+    props.pieceWhitePack || props.piecePack,
+    props.pieceBlackPack || props.piecePack
+  );
   emit("ready", pieces);
 });
 
-defineExpose({ getElement, boardSize: size, Rescale, pieces });
+defineExpose({ getElement, boardSize: size, Rescale, pieces, fontScale });
 </script>
 
-<style lang="scss">
+<style lang="postcss">
 .cw-chessboard {
   user-select: none;
   position: relative;
@@ -158,64 +162,56 @@ defineExpose({ getElement, boardSize: size, Rescale, pieces });
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  border-style: solid;
-  border-color: transparent;
   background-color: transparent;
+}
+
+.cw-chessboard.active {
+  touch-action: none;
+  -o-touch-action: none;
+  -ms-touch-action: none;
+  -webkit-touch-action: none;
+}
+
+.cw-chessboard-inner {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+}
+
+.cw-wrapper {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
   box-sizing: border-box;
+  position: relative;
+}
 
-  &.active {
-    cursor: pointer;
-    touch-action: none;
-    -o-touch-action: none;
-    -ms-touch-action: none;
-    -webkit-touch-action: none;
-  }
+.cw-container {
+  display: inline-block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 
-  .cw-wrapper {
-    display: inline-block;
-    width: 100%;
-    height: 100%;
-    border-style: solid;
-    // overflow: hidden;
-    box-sizing: border-box;
+  .pieces {
+    display: contents;
 
-    .cw-container {
-      display: inline-block;
-      position: relative;
-      width: 100%;
-      height: 100%;
-      box-sizing: border-box;
+    piece {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 12.5%;
+      height: 12.5%;
+      background-size: cover;
+      z-index: 5;
+      will-change: transform, opacity;
+      user-select: none;
+      cursor: grab;
 
-      &::before {
-        content: " ";
-        background-color: #fff;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-repeat: no-repeat;
-        border-radius: inherit;
-      }
-
-      &.contour {
-        border-width: 1px;
-        border-style: solid;
-      }
-      .pieces {
-        display: contents;
-        & > piece {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 12.5%;
-          height: 12.5%;
-          background-size: cover;
-          z-index: 5;
-          will-change: transform, opacity;
-          user-select: none;
-          // pointer-events: none;
-        }
+      &:active {
+        cursor: grabbing;
       }
     }
   }

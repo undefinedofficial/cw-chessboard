@@ -1,4 +1,4 @@
-@import "../chessboard-theme.scss";
+@use "../chessboard-theme.scss" as *;
 
 @include chessboard-theme(
   // name
@@ -11,13 +11,5 @@
   // coordinates in frame-mode
   #e6d3b1,
   // border
-  #9a7b52,
-  // default color marker
-  #0000007a,
-  // red color marker
-  #ff00007a,
-  // green color marker
-  #2ff8f17a,
-  // blue color marker
-  #0000ff7a
+  #9a7b52
 );

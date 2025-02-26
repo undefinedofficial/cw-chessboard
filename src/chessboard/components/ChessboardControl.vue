@@ -1,17 +1,23 @@
 <template>
-  <div
-    class="pieces move-field"
-    :class="pieceSet"
-    v-if="activePiece"
-    v-html="
-      `<piece class=&quot;active ${activePiece.color}${activePiece.name}&quot; style=&quot;transform: translate3d(${activePiece.x}px, ${activePiece.y}px,0px);z-index: 100&quot;></piece>`
-    "
-  ></div>
+  <div class="pieces move-field" v-if="activePiece">
+    <component
+      is="piece"
+      class="active"
+      :style="{
+        transform: `translate3d(${activePiece.x}px, ${activePiece.y}px, 0px)`,
+        zIndex: 100,
+      }"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" version="1.1">
+        <use :href="`#${piecePack}-${activePiece.color}${activePiece.name}`"></use>
+      </svg>
+    </component>
+  </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import type { Color, InputColor, Piece, Point } from "./types";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import type { Color, DoneFn, InputColor, Piece, Point } from "../types";
 import {
   invertPoint,
   normalizePoint,
@@ -19,11 +25,10 @@ import {
   pointToSquare,
   squareToString,
   squareValid,
-} from "./utils/point";
-import type { ChessboardPieces } from "./hooks/pieces";
-import { useControl } from "./hooks/control";
-import { getPointInElement } from "./utils";
-import { useContext } from "./hooks/context";
+} from "../utils/point";
+import { useControl } from "../hooks/control";
+import { getPointInElement } from "../utils";
+import { useContext } from "../hooks/context";
 import type { Ref } from "vue";
 
 export interface ChessboardControlProps {
@@ -37,8 +42,8 @@ const props = withDefaults(defineProps<ChessboardControlProps>(), {
   enableColor: "all",
 });
 const emits = defineEmits<{
-  beforeMove: [square: string, done: (is: boolean) => any];
-  afterMove: [fromSquare: string, toSquare: string, done: (is: boolean) => any];
+  beforeMove: [square: string, done: DoneFn];
+  afterMove: [fromSquare: string, toSquare: string, done: DoneFn];
   cancelMove: [square: string];
   enterSquare: [square: string];
   leaveSquare: [square: string];
@@ -49,10 +54,14 @@ const emits = defineEmits<{
 
 const DRAGGING_SENSITIVE = 32;
 
-const { chessboard, pieces, pieceSet, orientation } = useContext();
+const { chessboard, pieces, pieceWhitePack, pieceBlackPack, orientation } = useContext();
 
 let fromSquare: Piece | null = null;
 const activePiece = ref<Piece | null>(null);
+
+const piecePack = computed(() =>
+  activePiece.value?.color == "w" ? pieceWhitePack.value : pieceBlackPack.value
+);
 
 const isEnabledColor = (color: Color) => props.enableColor === "all" || props.enableColor === color;
 
@@ -178,21 +187,27 @@ useControl({
     const square = pointToSquare(point, orientation.value, point);
 
     if (!squareValid(square)) {
-      console.log("Invalid square", fromSquare);
+      // console.log("Invalid square", fromSquare);
 
       if (fromSquare) onCancelMove(fromSquare);
       return;
     }
+
+    // this need edit...
     activePiece.value = null;
-    if (holdPress && fromSquare && pointEqual(fromSquare, square)) {
-      onCancelMove(fromSquare);
-      return;
-    }
+    // if (holdPress && fromSquare && pointEqual(fromSquare, square)) {
+    //   onCancelMove(fromSquare);
+    //   return;
+    // }
 
     // Click for moving selected a chess piece
-    const piece = pieces.getPieceByPoint(square);
+    if (!fromSquare) return;
 
-    if (!fromSquare || (piece && piece.color === fromSquare.color && !holdPress)) return;
+    const piece = pieces.getPieceByPoint(square);
+    if (piece && piece.color === fromSquare.color) {
+      alphaPiece(fromSquare, false);
+      return;
+    }
 
     emits(
       "afterMove",
@@ -252,13 +267,12 @@ onBeforeUnmount(() => {
   chessboard.value?.removeEventListener("drop", onDrop);
   chessboard.value?.removeEventListener("dragover", onDragOver);
 });
+
+defineExpose({ activePiece });
 </script>
 
-<style lang="scss">
-.pieces > piece {
-  cursor: grab;
-  &.active {
-    cursor: grabbing;
-  }
+<style>
+.pieces.move-field .active {
+  cursor: grabbing !important;
 }
 </style>

@@ -6,9 +6,11 @@ import type {
   Point,
   InputColor,
   RenderPieceCallback,
+  Piece,
 } from "../types";
 import { invertPoint, squareToString } from "../utils/point";
 import { PromiseQueue } from "./queue";
+import { createSvgPieceElement } from "../utils";
 
 const enum CHANGE_TYPE {
   ADD,
@@ -42,11 +44,6 @@ interface ChangeMove extends IChanged {
 }
 
 type Change = ChangeAddOrRemove | ChangeMove;
-
-interface PieceSquare {
-  name: PieceSymbol;
-  color: Color;
-}
 
 interface UsePiecesOptions {
   /**
@@ -142,8 +139,10 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
   let isAlphaPiece = false;
   let squares: SquareType[] = [];
   let visibility: InputColor = "all";
+  let pieceWhitePack = "default";
+  let pieceBlackPack = "default";
 
-  const getPieceByIndex = (idx: number): null | PieceSquare => {
+  const getPieceByIndex = (idx: number): Pick<Piece, "color" | "name"> | null => {
     const square = squares[idx];
     if (!square) return null;
     const name = square.toLowerCase() as PieceSymbol;
@@ -170,6 +169,10 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     element.style.opacity = "1";
     // chess invisible
     element.style.display = visibility === "all" || visibility === color ? "block" : "none";
+
+    element.appendChild(
+      createSvgPieceElement(color === "w" ? pieceWhitePack : pieceBlackPack, dataPiece)
+    );
 
     const modifyClass = onRenderPiece?.(square, piece, color);
     if (modifyClass) element.classList.add(modifyClass);
@@ -356,6 +359,23 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
   function setContainer(newContainer: HTMLElement) {
     container = newContainer;
   }
+  function setPiecePack(packWhite: string, packBlack: string, animate = false) {
+    if (packWhite === pieceWhitePack && packBlack === pieceBlackPack) return;
+
+    pieceWhitePack = packWhite;
+    pieceBlackPack = packBlack;
+
+    let dur = animate ? duration : 0;
+    if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
+
+    const fromTask = queue.addTask(() => runAnimate(new Array(...squares), [], dur, orientation));
+    const toTask = queue.addTask(() =>
+      runAnimate([], new Array(...squares), dur, orientation).then(() =>
+        redraw(squares, orientation, true)
+      )
+    );
+    return Promise.all([fromTask, toTask]);
+  }
 
   async function movePiece(from: Point, to: Point, animate = false): Promise<void> {
     const newSquares = new Array(...squares);
@@ -445,6 +465,7 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     getPieceByIndex,
     getPieceByPoint,
     movePiece,
+    setPiecePack,
     setAlphaPiece,
     setFen,
     setDuration,
@@ -456,4 +477,4 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
   };
 }
 
-export type ChessboardPieces = ReturnType<typeof usePieces>;
+export type UseChessboardPieces = ReturnType<typeof usePieces>;

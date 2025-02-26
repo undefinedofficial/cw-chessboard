@@ -45,19 +45,23 @@ export interface ChessboardProps {
   orientation?: Color;
   duration?: number;
   borderSize?: number;
+  borderColor?: string;
   roundSize?: number;
   fontSize?: number;
   coordOutside?: boolean;
   coordMode?: CoordMode;
+  coordWhite?: string;
+  coordBlack?: string;
   alphaPiece?: boolean;
-  boardSet?: string;
-  pieceSet?: string;
-  pieceWhiteSet?: string;
-  pieceBlackSet?: string;
   resize?: ChessboardResize;
   visibility?: InputColor;
   onRenderPiece?: RenderPieceCallback;
+  piecePack?: string;
+  pieceWhitePack?: string;
+  pieceBlackPack?: string;
 }
+
+export type DoneFn = (is: boolean) => any;
 
 export interface PieceMove {
   square: string;

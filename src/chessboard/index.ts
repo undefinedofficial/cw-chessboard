@@ -1,20 +1,36 @@
-export type * from "./types";
-export * from "./utils/markers";
+import "./style/main.css";
 
-import Chessboard from "./Chessboard.vue";
-import PromotionDialog from "./PromotionDialog.vue";
-import ChessboardControl from "./ChessboardControl.vue";
-import ChessboardMarkers from "./ChessboardMarkers.vue";
-import ChessboardSquare from "./ChessboardSquare.vue";
-import ChessboardPiece from "./ChessboardPiece.vue";
-import type { ChessboardPieces } from "./hooks/pieces";
+export type * from "./types";
+import type { UseChessboardPieces } from "./hooks/pieces";
+import { useContext, type ChessboardContext } from "./hooks/context";
+
+import Chessboard from "./components/Chessboard.vue";
+import ChessboardSurface from "./components/ChessboardSurface.vue";
+import PromotionDialog from "./components/PromotionDialog.vue";
+import ChessboardControl from "./components/ChessboardControl.vue";
+
+import ChessboardPieces from "./components/ChessboardPieces.vue";
+import ChessboardPiece from "./components/ChessboardPiece.vue";
+
+import ChessboardSquare from "./components/ChessboardSquare.vue";
+import ChessboardArrow from "./components/ChessboardArrow.vue";
+import ChessboardFrame from "./components/ChessboardFrame.vue";
+import ChessboardDot from "./components/ChessboardDot.vue";
+import ChessboardCircle from "./components/ChessboardCircle.vue";
 
 export {
+  type UseChessboardPieces,
+  useContext,
+  type ChessboardContext,
   Chessboard,
+  ChessboardSurface,
   PromotionDialog,
   ChessboardControl,
-  ChessboardMarkers,
   ChessboardSquare,
+  ChessboardPieces,
   ChessboardPiece,
-  type ChessboardPieces,
+  ChessboardArrow,
+  ChessboardDot,
+  ChessboardCircle,
+  ChessboardFrame,
 };

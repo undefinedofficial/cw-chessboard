@@ -1,4 +1,4 @@
-// @import "./chessboard-theme.scss";
+// @use "../chessboard-theme.scss" as *;
 
 // @include chessboard-theme(
 //   "chessboard-club",

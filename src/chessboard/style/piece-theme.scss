@@ -2,52 +2,40 @@
   .#{$name} > piece {
     &.wp {
       background-image: url(#{$wp});
-      background-size: cover;
     }
     &.wr {
       background-image: url(#{$wr});
-      background-size: cover;
     }
     &.wn {
       background-image: url(#{$wn});
-      background-size: cover;
     }
     &.wb {
       background-image: url(#{$wb});
-      background-size: cover;
     }
     &.wq {
       background-image: url(#{$wq});
-      background-size: cover;
     }
     &.wk {
       background-image: url(#{$wk});
-      background-size: cover;
     }
 
     &.bp {
       background-image: url(#{$bp});
-      background-size: cover;
     }
     &.br {
       background-image: url(#{$br});
-      background-size: cover;
     }
     &.bn {
       background-image: url(#{$bn});
-      background-size: cover;
     }
     &.bb {
       background-image: url(#{$bb});
-      background-size: cover;
     }
     &.bq {
       background-image: url(#{$bq});
-      background-size: cover;
     }
     &.bk {
       background-image: url(#{$bk});
-      background-size: cover;
     }
   }
 }

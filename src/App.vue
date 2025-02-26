@@ -16,16 +16,41 @@
       :resize="true"
       ref="chessboardEl"
     >
-      <ChessboardMarkers :markers="markers" />
+      <ChessboardSurface white="#f0d9b5" black="#b58863" />
+      <ChessboardPieces />
+
+      <ChessboardCircle class="text-red-500/80" square="a4" />
+      <ChessboardSquare square="a5" class="bg-sky-700" />
+      <ChessboardFrame square="b5" class="text-green-700" />
+      <ChessboardArrow square="b4" toSquare="c4" class="text-violet-700" :size="arrowSize" />
+      <ChessboardDot square="c5" class="text-purple-800" />
       <ChessboardSquare
-        square="c5"
-        class="flex justify-center items-center overflow-hidden text-sm"
+        square="a6"
+        class="flex flex-col justify-center items-center overflow-hidden text-center text-xs"
       >
-        square
+        best<br />
+        chess <br />
+        board
       </ChessboardSquare>
-      <ChessboardSquare square="b5" class="flex justify-center items-center text-2xl" above>
+      <ChessboardSquare square="b6" class="flex justify-center items-center text-2xl" above>
         1.0
       </ChessboardSquare>
+
+      <ChessboardFrame class="text-green-800/60" v-if="dropCoord" :square="dropCoord" />
+
+      <ChessboardSquare class="bg-cyan-400/60" v-for="move in lastMove" :square="move" />
+      <ChessboardFrame class="text-black/60" v-if="moveFromSquare" :square="moveFromSquare" />
+      <ChessboardFrame
+        class="text-black/60 transition-all"
+        v-if="moveToSquare && moveToSquare !== moveFromSquare"
+        :square="moveToSquare"
+      />
+      <ChessboardDot
+        class="text-black/60 transition-all"
+        v-for="move in moveVariants"
+        :square="move"
+      />
+
       <ChessboardControl
         v-if="!viewonly"
         :enableColor="turn"
@@ -33,9 +58,9 @@
         :alignPiece="alignPiece"
         @beforeMove="onBeforeMove"
         @afterMove="onAfterMove"
-        @cancelMove="(onCancelMove($event), selectMarkers('selected'), selectMarkers('active'))"
-        @enterSquare="(onEnterSquare($event), selectMarkers('active', MARKER.FRAME, [$event]))"
-        @leaveSquare="(onLeaveSquare($event), selectMarkers('active'))"
+        @cancelMove="onCancelMove($event)"
+        @enterSquare="onEnterSquare($event)"
+        @leaveSquare="onLeaveSquare($event)"
         @dropMove="onDropMove"
         @dropEnd="onDropEnd"
       />
@@ -200,9 +225,9 @@
       </div>
 
       <ControlRange
-        title="markers size"
-        name="markerSize"
-        v-model="markerSize"
+        title="arrow size"
+        name="arrowSize"
+        v-model="arrowSize"
         suffix=""
         min="0"
         max="9"
@@ -213,7 +238,7 @@
         <div class="h-64 flex space-x-3">
           <ChessboardPiece
             v-for="piece in pieces"
-            :pieceSet="piece"
+            :piecePack="piece"
             class="w-16 h-16"
             piece="Q"
             draggable
@@ -225,20 +250,22 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { Chess, type PieceSymbol } from "chess.ts";
 
 import {
-  type Marker,
   type InputColor,
-  MARKER,
-  type MarkerPoint,
   Chessboard,
-  ChessboardMarkers,
   ChessboardControl,
   ChessboardSquare,
   PromotionDialog,
   ChessboardPiece,
+  ChessboardArrow,
+  ChessboardDot,
+  ChessboardFrame,
+  ChessboardCircle,
+  ChessboardSurface,
+  ChessboardPieces,
 } from "cw-chessboard/index";
 import ControlRadio from "./ControlRadio.vue";
 import ControlRange from "./ControlRange.vue";
@@ -262,9 +289,6 @@ const fenProxy = computed({
   set: (v) => {
     chess = new Chess(v);
     fen.value = v;
-    // chessboardEl.value!.wait().then(() => {
-    //   console.log("moved finished");
-    // });
   },
 });
 
@@ -279,51 +303,23 @@ const coordMode = ref<any>("left");
 const moveMode = ref<"auto" | "move" | "press">("auto");
 const viewonly = ref(false);
 const alignPiece = ref(false);
+const arrowSize = ref(7);
 
-const markers = ref<(Marker & { id?: string })[]>([
-  { type: MARKER.FRAME, color: "red", square: "a4" },
-  { type: MARKER.DOT, color: "green", square: "a5" },
-  { type: MARKER.DOT, color: "red", square: "a6" },
-  { type: MARKER.CIRCLE, color: "blue", square: "a3" },
-  { type: MARKER.SQUARE, color: "red", square: "b6" },
-  { type: MARKER.ARROW, color: "blue", square: "b3", toSquare: "b4" },
-  { type: MARKER.SQUARE, color: "blue", square: "f5" },
-  { type: MARKER.SQUARE, color: "blue", square: "f4" },
-]);
-
-const markerSize = ref(0);
-watch(
-  markerSize,
-  () => {
-    markers.value = markers.value.map((m) => ({ ...m, size: markerSize.value }));
-  },
-  { immediate: true }
-);
-
-const selectMarkers = (
-  id: string,
-  marker?: MarkerPoint["type"],
-  squares?: string[],
-  color?: MarkerPoint["color"]
-): void => {
-  markers.value = markers.value.filter((m) => m.id !== id);
-  if (squares)
-    squares.forEach((square) =>
-      markers.value.push({ id, type: marker!, square, color, size: markerSize.value } as Marker)
-    );
-};
+const moveToSquare = ref<string | null>(null);
+const moveFromSquare = ref<string | null>(null);
+const moveVariants = ref<string[]>([]);
+const lastMove = ref<string[]>([]);
+const dropCoord = ref<string | null>(null);
 
 const onBeforeMove = (square: string, done: (accept: boolean) => void) => {
   console.log("BeforeMove: ", square);
-  selectMarkers("drop");
 
   const moves = chess.moves({ square, verbose: true });
   if (moves.length === 0) return done(false);
-  selectMarkers(
-    "selected",
-    MARKER.DOT,
-    moves.map((m) => m.to)
-  );
+
+  moveFromSquare.value = square;
+  moveVariants.value = moves.map((m) => m.to);
+
   done(true);
 };
 const onAfterMove = async (
@@ -334,23 +330,33 @@ const onAfterMove = async (
   let promotion!: PieceSymbol;
   if (chess.isPromotion({ from: fromSquare, to: toSquare }))
     promotion = (await promotionDialogEl.value!.require(toSquare)) as PieceSymbol;
+
   console.log("AfterMove: ", fromSquare, toSquare);
-  selectMarkers("selected");
-  selectMarkers("active");
+
+  moveFromSquare.value = null;
+  moveToSquare.value = null;
+  moveVariants.value = [];
+
   const move = chess.move({ from: fromSquare, to: toSquare, promotion });
   if (!move) return done(false);
 
+  lastMove.value = [fromSquare];
   await done(true);
+  lastMove.value.push(toSquare);
+
   fen.value = chess.fen();
   turn.value = chess.turn();
 };
 const onCancelMove = (square: string) => {
   console.log("CancelMove: ", square);
-  selectMarkers("selected");
+  moveFromSquare.value = null;
+  moveToSquare.value = null;
+  moveVariants.value = [];
 };
 
 const onEnterSquare = (square: string) => {
   console.log("EnterSquare: ", square);
+  moveToSquare.value = square;
 };
 const onLeaveSquare = (square: string) => {
   console.log("LeaveSquare: ", square);
@@ -358,12 +364,12 @@ const onLeaveSquare = (square: string) => {
 
 const onDropMove = (square: string) => {
   console.log("DropMove: ", square);
-  selectMarkers("drop", MARKER.FRAME, [square]);
+  dropCoord.value = square;
 };
 
 const onDropEnd = (piece: string, square: string) => {
   alert("DropEnd: " + piece + " " + square);
-  selectMarkers("drop");
+  dropCoord.value = null;
 };
 </script>
 
@@ -380,10 +386,8 @@ const onDropEnd = (piece: string, square: string) => {
 html,
 body,
 #app {
-  max-width: 100vw;
-  max-height: 100vh;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
 
