@@ -113,6 +113,9 @@ useControl({
     // Click for selecting a chess piece
     if (!piece || !isEnabledColor(piece.color)) return true;
 
+    // If color piece same as current piece then reset moving piece and set it as active piece.
+    if (piece.color === fromSquare?.color) onCancelMove(fromSquare, false);
+
     emits("beforeMove", squareToString(square), (done: boolean) => {
       if (!done) return;
 
