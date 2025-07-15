@@ -53,9 +53,11 @@ const props = withDefaults(
     square: string;
     toSquare: string;
     size?: number;
+    offset?: number;
   }>(),
   {
     size: 7,
+    offset: 36,
   }
 );
 
@@ -63,12 +65,32 @@ const pointerId = useId();
 
 const { orientation } = useContext();
 
-const from = computed(() =>
+const fromPoint = computed(() =>
   pointHalfSquareNS(squareToPointNS(invertPoint(stringToSquare(props.square), orientation.value)))
 );
-const to = computed(() =>
+const toPoint = computed(() =>
   pointHalfSquareNS(squareToPointNS(invertPoint(stringToSquare(props.toSquare), orientation.value)))
 );
+const from = computed(() => {
+  let { x, y } = fromPoint.value;
+  if (props.offset) {
+    if (x < toPoint.value.x) x += props.offset;
+    else if (x > toPoint.value.x) x -= props.offset;
+    if (y < toPoint.value.y) y += props.offset;
+    else if (y > toPoint.value.y) y -= props.offset;
+  }
+  return { x, y };
+});
+const to = computed(() => {
+  let { x, y } = toPoint.value;
+  if (props.offset) {
+    if (x < fromPoint.value.x) x += props.offset;
+    else if (x > fromPoint.value.x) x -= props.offset;
+    if (y < fromPoint.value.y) y += props.offset;
+    else if (y > fromPoint.value.y) y -= props.offset;
+  }
+  return { x, y };
+});
 </script>
 
 <style>
