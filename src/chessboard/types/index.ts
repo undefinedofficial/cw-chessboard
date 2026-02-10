@@ -63,7 +63,7 @@ export interface ChessboardProps {
   interactive?: boolean;
   visibility?: InputColor;
   mode?: "auto" | "move" | "press";
-  enableColor?: InputColor;
+  turn?: InputColor;
   alignPiece?: boolean;
 }
 

@@ -5,12 +5,11 @@
         <slot name="before" />
         <div
           class="cw-chessboard"
-          v-on="
-      interactive
+          v-on="interactive
         ? {
-            pointerdown: onPointerStart,
+            pointerdown: onPointerDown,
             pointermove: onPointerMove,
-            pointerup: onPointerEnd,
+            pointerup: onPointerUp,
             pointercancel: onPointerCancel,
             contextmenu: (e: Event) => e.preventDefault(),
           }
@@ -65,8 +64,11 @@
   </ChessboardContainer>
 </template>
 
-<script lang="ts" setup vapor>
-import type { Ref } from "vue";
+<script lang="ts">
+const DRAGGING_SENSITIVE = 50;
+</script>
+
+<script lang="ts" setup>
 import { onMounted, watch, useTemplateRef, shallowRef, ref } from "vue";
 import type {
   ChessboardProps,
@@ -87,7 +89,7 @@ import {
   pointToSquare,
   squareToString,
   squareValid,
-} from "../utils";
+} from "../utils/square";
 import ChessboardContainer from "./ChessboardContainer.vue";
 
 const props = withDefaults(defineProps<ChessboardProps>(), {
@@ -96,17 +98,20 @@ const props = withDefaults(defineProps<ChessboardProps>(), {
   duration: 300,
   visibility: "all",
   mode: "auto",
-  enableColor: "all",
+  turn: "all",
 });
 
 const emit = defineEmits<{
-  beforeMove: [square: string, done: DoneFn];
-  afterMove: [fromSquare: string, toSquare: string, done: DoneFn];
-  cancelMove: [square: string];
-  enterSquare: [square: string];
-  leaveSquare: [square: string];
   ready: [UseChessboardPieces];
   moves: [moves: ChangeEvent[]];
+
+  beforemove: [square: string, done: DoneFn];
+  aftermove: [fromSquare: string, toSquare: string, done: DoneFn];
+  cancelmove: [square: string];
+  entersquare: [square: string];
+  leavesquare: [square: string];
+  oversquare: [square: string];
+  outsquare: [square: string];
 }>();
 
 const color = shallowRef<Color>(props.orientation);
@@ -147,224 +152,258 @@ onMounted(() => {
   emit("ready", pieces);
 });
 
-const _onPointerDown = (e: PointerEvent)=> {
-    if (!e.isPrimary || this._disabled) return;
+let _overSquare: string | null;
+let _fromSquare: Piece | null;
+let _enterSquare: Point | null;
+let _isDragging: boolean;
+let _holdPress: boolean;
+let _ghostElement: HTMLElement | undefined;
+let _pieceElement: HTMLElement | undefined;
+let _disabled: boolean | undefined;
 
-    e.stopPropagation();
+function onPointerDown(e: PointerEvent) {
+  if (!e.isPrimary || _disabled) return;
 
-    const point = this._getPosition(e);
+  e.stopPropagation();
 
-    const square = pointToSquare(point, this.orientation);
-    if (!squareValid(square)) return;
+  const point = _getPosition(e);
 
-    if (this._fromSquare && pointEqual(this._fromSquare, square)) {
-      this._cancelMove();
-      e.preventDefault();
-      return;
-    }
+  const square = pointToSquare(point, color.value);
+  if (!squareValid(square)) return;
 
-    const fromSquare = squareToString(square);
-
-    const piece = this._board[fromSquare].querySelector<HTMLElement>(`[data-piece]`);
-    const pieceCode = symbolToPiece(piece?.dataset.piece! as PieceCode) as PieceSymbol;
-    const color = piece?.dataset.color as Color;
-
-    // Click for selecting a chess piece
-    if (!piece || !this._isEnabledColor(color)) return;
-
-    // If color piece same as current piece then reset moving piece and set it as active piece.
-    if (color === this._fromSquare?.color) this._cancelMove(false);
-
-    if (this._fromSquare && color !== this._fromSquare?.color) return;
-
-    this._isDragging = true;
-
-    if (!this._emit("beforemove", { from: fromSquare, piece: pieceCode }, { cancelable: true })) return;
-
-    this._fromSquare = {
-      x: square.x,
-      y: square.y,
-      name: pieceCode as PieceSymbol,
-      color,
-    };
-    this._onEnterSquare(this._fromSquare);
-
-    (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
+  if (_fromSquare && pointEqual(_fromSquare, square)) {
+    _cancelMove();
+    e.preventDefault();
+    return;
   }
-  const _onPointerMove= (e: PointerEvent) =>{
-    if (!e.isPrimary || this._disabled) return;
 
-    const point = this._getPosition(e);
-    const square = pointToSquare(point, this.orientation);
-    if (squareValid(square)) {
-      const squareStr = squareToString(square);
-      if (this._overSquare !== squareStr) {
-        this._emit("oversquare", { square: squareStr });
-        if (this._overSquare) this._emit("outsquare", { square: this._overSquare });
-        this._overSquare = squareStr;
+  const fromSquare = squareToString(square);
+
+  const piece =
+    this._board[fromSquare].querySelector<HTMLElement>(`[data-piece]`);
+  const pieceCode = symbolToPiece(
+    piece?.dataset.piece! as PieceCode
+  ) as PieceSymbol;
+  const color = piece?.dataset.color as Color;
+
+  // Click for selecting a chess piece
+  if (!piece || !_isEnabledColor(color)) return;
+
+  // If color piece same as current piece then reset moving piece and set it as active piece.
+  if (color === _fromSquare?.color) _cancelMove(false);
+
+  if (_fromSquare && color !== _fromSquare?.color) return;
+
+  _isDragging = true;
+
+  if (
+    !_emit(
+      "beforemove",
+      { from: fromSquare, piece: pieceCode },
+      { cancelable: true }
+    )
+  )
+    return;
+
+  _fromSquare = {
+    x: square.x,
+    y: square.y,
+    name: pieceCode as PieceSymbol,
+    color,
+  };
+  _onEnterSquare(_fromSquare);
+
+  (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
+}
+function onPointerMove(e: PointerEvent) {
+  if (!e.isPrimary || _disabled) return;
+
+  const point = _getPosition(e);
+  const square = pointToSquare(point, color.value);
+  if (squareValid(square)) {
+    const squareStr = squareToString(square);
+    if (_overSquare !== squareStr) {
+      emit("oversquare", squareStr);
+      if (_overSquare) emit("outsquare", _overSquare);
+      _overSquare = squareStr;
+    }
+  }
+
+  e.stopPropagation();
+
+  if (!_fromSquare || !_isDragging || _isRejectMove()) return;
+
+  const squareWidth = point.width / 8;
+  const squareHeight = point.height / 8;
+
+  const halfX = point.x - squareWidth / 2;
+  const halfY = point.y - squareHeight / 2;
+  const squareString = squareToString(_fromSquare);
+
+  const lastHoldPress = _holdPress;
+  if (!lastHoldPress) {
+    const alignX = _fromSquare.x * squareWidth;
+    const alignY = _fromSquare.y * squareHeight;
+    const offsetX = Math.abs(halfX - alignX);
+    const offsetY = Math.abs(halfY - alignY);
+
+    _holdPress = offsetX > DRAGGING_SENSITIVE || offsetY > DRAGGING_SENSITIVE;
+    if (lastHoldPress !== _holdPress) {
+      if (_holdPress) {
+        const piece =
+          _board[squareString].querySelector<HTMLElement>(`[data-piece]`);
+
+        if (!piece) throw new Error("Piece not found");
+        _ghostElement = piece;
+
+        _pieceElement = piece.cloneNode() as HTMLElement;
+        _pieceElement.classList.add("moving", "dragging");
+        _ghostElement?.classList.toggle("secondary", true);
+
+        _board[squareString].appendChild(_pieceElement);
+      } else {
+        _ghostElement?.classList.remove("secondary");
+        _ghostElement = undefined;
+        _pieceElement?.remove();
+        _pieceElement = undefined;
       }
     }
-
-    e.stopPropagation();
-
-    if (!this._fromSquare || !this._isDragging || this._isRejectMove()) return;
-
-    const squareWidth = point.width / 8;
-    const squareHeight = point.height / 8;
-
-    const halfX = point.x - squareWidth / 2;
-    const halfY = point.y - squareHeight / 2;
-    const squareString = squareToString(this._fromSquare);
-
-    const lastHoldPress = this._holdPress;
-    if (!lastHoldPress) {
-      const alignX = this._fromSquare.x * squareWidth;
-      const alignY = this._fromSquare.y * squareHeight;
-      const offsetX = Math.abs(halfX - alignX);
-      const offsetY = Math.abs(halfY - alignY);
-
-      this._holdPress = offsetX > Board.DRAGGING_SENSITIVE || offsetY > Board.DRAGGING_SENSITIVE;
-      if (lastHoldPress !== this._holdPress) {
-        if (this._holdPress) {
-          const piece = this._board[squareString].querySelector<HTMLElement>(`[data-piece]`);
-
-          if (!piece) throw new Error("Piece not found");
-          this._ghostElement = piece;
-
-          this._pieceElement = piece.cloneNode() as HTMLElement;
-          this._pieceElement.classList.add("moving", "dragging");
-          this._ghostElement?.classList.toggle("secondary", true);
-
-          this._board[squareString].appendChild(this._pieceElement);
-        } else {
-          this._ghostElement?.classList.remove("secondary");
-          this._ghostElement = undefined;
-          this._pieceElement?.remove();
-          this._pieceElement = undefined;
-        }
-      }
-    }
-
-    if (this._holdPress && !this._isRejectMove() && this._pieceElement) {
-      const { x, y, height, width } = this._board[squareString].getBoundingClientRect();
-      this._pieceElement.style.transform = `translate3d(${e.clientX - x - width / 2}px, ${e.clientY - y - height / 2}px, 0) scale(var(--cw-p-piece-drag-scale))`;
-    }
-
-    if (this.alignPiece && this._pieceElement) {
-      this._pieceElement.style.transform = `translate3d(${(square.x - this._fromSquare.x) * 100}%, ${(square.y - this._fromSquare.y) * 100}%, 0) scale(var(--cw-p-piece-drag-scale))`;
-    }
-
-    if (!squareValid(square)) return;
-
-    this._onEnterSquare(square);
-  }
-  const _onPointerUp= (e: PointerEvent) =>{
-    if (!e.isPrimary || this._disabled) return;
-
-    this._isDragging = false;
-
-    e.stopPropagation();
-    if (this._isRejectMove()) {
-      return this._cancelMove();
-    }
-
-    const point = this._getPosition(e);
-    const square = pointToSquare(point, this.orientation);
-
-    if (!squareValid(square)) {
-      return this._cancelMove();
-    }
-
-    // this need edit...
-    if (this._ghostElement) {
-      this._ghostElement?.classList.remove("secondary");
-      this._ghostElement = undefined;
-    }
-    if (this._pieceElement) {
-      this._pieceElement.remove();
-      this._pieceElement = undefined;
-    }
-
-    // if (holdPress && _fromSquare && pointEqual(_fromSquare, square)) {
-    //   onCancelMove(chessboard, _fromSquare);
-    //   return;
-    // }
-
-    // Click for moving selected a chess piece
-    if (!this._fromSquare) return;
-
-    const toSquare = squareToString(square);
-
-    const piece = this._board[toSquare].querySelector<HTMLElement>(`[data-piece]`);
-
-    if (piece?.dataset.color === this._fromSquare.color) {
-      return;
-    }
-
-    // save the current position of the current piece in the current square before remove
-
-    // const holdPress = !this._holdPress;
-    // done is true if the move was successful and not emit cancel event else emit cancel event
-    this._cancelMove(
-      !this._emit("aftermove", {
-        from: squareToString(this._fromSquare),
-        to: toSquare,
-        piece: piece?.dataset.piece!,
-        type: this._holdPress ? "drag" : "click",
-      }),
-    );
   }
 
-  const _onPointerCancel = (e: PointerEvent)=> {
-    e.stopPropagation();
-    this._cancelMove(true);
+  if (_holdPress && !_isRejectMove() && _pieceElement) {
+    const { x, y, height, width } =
+      _board[squareString].getBoundingClientRect();
+    _pieceElement.style.transform = `translate3d(${
+      e.clientX - x - width / 2
+    }px, ${
+      e.clientY - y - height / 2
+    }px, 0) scale(var(--cw-p-piece-drag-scale))`;
   }
 
-  function _cancelMove(emited = true) {
-    if (!this._fromSquare) return;
-
-    // Click for cancel selected a chess piece
-    const squareString = squareToString(this._fromSquare);
-    if (emited) this._emit("cancelmove", { square: squareString });
-
-    this._enterSquare = null;
-    this._fromSquare = null;
-    this._holdPress = false;
-    this._isDragging = false;
-
-    if (this._ghostElement) {
-      this._ghostElement?.classList.remove("secondary");
-      this._ghostElement = undefined;
-    }
-    if (this._pieceElement) {
-      this._pieceElement.remove();
-      this._pieceElement = undefined;
-    }
+  if (props.alignPiece && _pieceElement) {
+    _pieceElement.style.transform = `translate3d(${
+      (square.x - _fromSquare.x) * 100
+    }%, ${
+      (square.y - _fromSquare.y) * 100
+    }%, 0) scale(var(--cw-p-piece-drag-scale))`;
   }
 
-  function _isEnabledColor = (color: Color) => this.turn === "all" || this.turn === color;
+  if (!squareValid(square)) return;
 
-  function _isRejectMove() {
-    if (this.mode === "auto") return false;
-    return (this.mode === "press" && this._holdPress) || (this.mode === "move" && !this._holdPress);
+  _onEnterSquare(square);
+}
+function onPointerUp(e: PointerEvent) {
+  if (!e.isPrimary || _disabled) return;
+
+  _isDragging = false;
+
+  e.stopPropagation();
+  if (_isRejectMove()) {
+    return _cancelMove();
   }
 
-  function _onEnterSquare(square: Point) {
-    if (this._enterSquare && pointEqual(this._enterSquare, square)) return;
+  const point = _getPosition(e);
+  const square = pointToSquare(point, color.value);
 
-    if (this._enterSquare) this._emit("leavesquare", { square: squareToString(this._enterSquare) });
-    this._emit("entersquare", { square: squareToString(square) });
-    this._enterSquare = square;
+  if (!squareValid(square)) {
+    return _cancelMove();
   }
 
-  function _getPosition(e: PointerEvent) {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    return { x, y, width: rect.width, height: rect.height };
+  // this need edit...
+  if (_ghostElement) {
+    _ghostElement?.classList.remove("secondary");
+    _ghostElement = undefined;
+  }
+  if (_pieceElement) {
+    _pieceElement.remove();
+    _pieceElement = undefined;
   }
 
-defineExpose({   pieces });
+  // if (holdPress && _fromSquare && pointEqual(_fromSquare, square)) {
+  //   onCancelMove(chessboard, _fromSquare);
+  //   return;
+  // }
+
+  // Click for moving selected a chess piece
+  if (!_fromSquare) return;
+
+  const toSquare = squareToString(square);
+
+  const piece = _board[toSquare].querySelector<HTMLElement>(`[data-piece]`);
+
+  if (piece?.dataset.color === _fromSquare.color) {
+    return;
+  }
+
+  // save the current position of the current piece in the current square before remove
+
+  // const holdPress = !this._holdPress;
+  // done is true if the move was successful and not emit cancel event else emit cancel event
+  _cancelMove(
+    !_emit("aftermove", {
+      from: squareToString(_fromSquare),
+      to: toSquare,
+      piece: piece?.dataset.piece!,
+      type: _holdPress ? "drag" : "click",
+    })
+  );
+}
+
+function onPointerCancel(e: PointerEvent) {
+  e.stopPropagation();
+  _cancelMove(true);
+}
+
+function _cancelMove(emited = true) {
+  if (!_fromSquare) return;
+
+  // Click for cancel selected a chess piece
+  const squareString = squareToString(_fromSquare);
+  if (emited) emit("cancelmove", squareString);
+
+  _enterSquare = null;
+  _fromSquare = null;
+  _holdPress = false;
+  _isDragging = false;
+
+  if (_ghostElement) {
+    _ghostElement?.classList.remove("secondary");
+    _ghostElement = undefined;
+  }
+  if (_pieceElement) {
+    _pieceElement.remove();
+    _pieceElement = undefined;
+  }
+}
+
+function _isEnabledColor(color: Color) {
+  return props.turn === "all" || props.turn === color;
+}
+
+function _isRejectMove() {
+  if (props.mode === "auto") return false;
+  return (
+    (props.mode === "press" && _holdPress) ||
+    (props.mode === "move" && !_holdPress)
+  );
+}
+
+function _onEnterSquare(square: Point) {
+  if (_enterSquare && pointEqual(_enterSquare, square)) return;
+
+  if (_enterSquare) emit("leavesquare", squareToString(_enterSquare));
+  emit("entersquare", squareToString(square));
+  _enterSquare = square;
+}
+
+function _getPosition(e: PointerEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  return { x, y, width: rect.width, height: rect.height };
+}
+
+defineExpose({ pieces });
 </script>
 
 <style>
