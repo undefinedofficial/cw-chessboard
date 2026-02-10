@@ -3,26 +3,24 @@
     <Chessboard
       :fen="fen"
       :orientation="orientation"
-      :borderSize="borderSize"
-      :roundSize="roundSize"
-      :fontSize="fontSize"
-      :coordOutside="coordOutside"
       :coordMode="coordMode"
       :duration="duration"
       :alphaPiece="alphaPiece"
-      :boardSet="boardSet"
-      :pieceSet="piecesSet"
       :visibility="visibility"
-      :resize="true"
       ref="chessboardEl"
     >
-      <ChessboardSurface white="#f0d9b5" black="#b58863" />
+      <!-- <ChessboardSurface white="#f0d9b5" black="#b58863" />
       <ChessboardPieces />
 
       <ChessboardCircle class="text-red-500/80" square="a4" />
       <ChessboardSquare square="a5" class="bg-sky-700" />
       <ChessboardFrame square="b5" class="text-green-700" />
-      <ChessboardArrow square="b4" toSquare="c4" class="text-violet-700" :size="arrowSize" />
+      <ChessboardArrow
+        square="b4"
+        toSquare="c4"
+        class="text-violet-700"
+        :size="arrowSize"
+      />
       <ChessboardDot square="c5" class="text-purple-800" />
       <ChessboardSquare
         square="a6"
@@ -32,14 +30,30 @@
         chess <br />
         board
       </ChessboardSquare>
-      <ChessboardSquare square="b6" class="flex justify-center items-center text-2xl" above>
+      <ChessboardSquare
+        square="b6"
+        class="flex justify-center items-center text-2xl"
+        above
+      >
         1.0
       </ChessboardSquare>
 
-      <ChessboardFrame class="text-green-800/60" v-if="dropCoord" :square="dropCoord" />
+      <ChessboardFrame
+        class="text-green-800/60"
+        v-if="dropCoord"
+        :square="dropCoord"
+      />
 
-      <ChessboardSquare class="bg-cyan-400/60" v-for="move in lastMove" :square="move" />
-      <ChessboardFrame class="text-black/60" v-if="moveFromSquare" :square="moveFromSquare" />
+      <ChessboardSquare
+        class="bg-cyan-400/60"
+        v-for="move in lastMove"
+        :square="move"
+      />
+      <ChessboardFrame
+        class="text-black/60"
+        v-if="moveFromSquare"
+        :square="moveFromSquare"
+      />
       <ChessboardFrame
         class="text-black/60 transition-all"
         v-if="moveToSquare && moveToSquare !== moveFromSquare"
@@ -64,10 +78,10 @@
         @dropMove="onDropMove"
         @dropEnd="onDropEnd"
       />
-      <PromotionDialog ref="promotionDialogEl" />
+      <PromotionDialog ref="promotionDialogEl" /> -->
     </Chessboard>
   </div>
-  <div class="chessboard-config">
+  <div class="chessboard-config m-5">
     <div class="flex flex-col w-full h-full space-y-3">
       <ControlRadio
         title="move mode"
@@ -256,21 +270,17 @@ import { Chess, type PieceSymbol } from "chess.ts";
 import {
   type InputColor,
   Chessboard,
-  ChessboardControl,
   ChessboardSquare,
   PromotionDialog,
-  ChessboardPiece,
   ChessboardArrow,
   ChessboardDot,
   ChessboardFrame,
   ChessboardCircle,
-  ChessboardSurface,
-  ChessboardPieces,
 } from "cw-chessboard/index";
 import ControlRadio from "./ControlRadio.vue";
 import ControlRange from "./ControlRange.vue";
 
-const chessboardEl = ref<InstanceType<typeof Chessboard>>();
+// const chessboardEl = ref<InstanceType<typeof Chessboard>>();
 const promotionDialogEl = ref<InstanceType<typeof PromotionDialog>>();
 
 let chess = new Chess();
@@ -329,7 +339,9 @@ const onAfterMove = async (
 ) => {
   let promotion!: PieceSymbol;
   if (chess.isPromotion({ from: fromSquare, to: toSquare }))
-    promotion = (await promotionDialogEl.value!.require(toSquare)) as PieceSymbol;
+    promotion = (await promotionDialogEl.value!.require(
+      toSquare
+    )) as PieceSymbol;
 
   console.log("AfterMove: ", fromSquare, toSquare);
 
@@ -374,15 +386,6 @@ const onDropEnd = (piece: string, square: string) => {
 </script>
 
 <style>
-@tailwind base;
-@layer base {
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
-}
-@tailwind components;
-@tailwind utilities;
-
 html,
 body,
 #app {
@@ -390,8 +393,6 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-
-  @apply md:flex md:mx-5 md:overflow-hidden;
 }
 
 .chessboard-preview {
@@ -417,6 +418,5 @@ body,
 
   width: 100vw;
   height: 100vh;
-  @apply m-5;
 }
 </style>

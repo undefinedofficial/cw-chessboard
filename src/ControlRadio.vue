@@ -22,7 +22,6 @@
 </template>
 
 <script lang="ts" setup>
-import { defineModel } from "vue";
 const props = defineProps<{
   name: string;
   title?: string;
@@ -31,5 +30,3 @@ const props = defineProps<{
 
 const model = defineModel<string>({ required: true });
 </script>
-
-<style lang="scss"></style>

@@ -20,7 +20,19 @@ export type Size2D = {
   height: number;
 };
 
-export type PieceSymbol = "k" | "q" | "r" | "n" | "b" | "p" | "K" | "Q" | "R" | "N" | "B" | "P";
+export type PieceSymbol =
+  | "k"
+  | "q"
+  | "r"
+  | "n"
+  | "b"
+  | "p"
+  | "K"
+  | "Q"
+  | "R"
+  | "N"
+  | "B"
+  | "P";
 
 export interface Piece extends Point {
   name: PieceSymbol;
@@ -34,31 +46,25 @@ export type MovePieceFunction = (
   type?: string
 ) => Promise<void>;
 
-export type RenderPieceCallback = (square: string, piece: PieceSymbol, color: Color) => string;
+export type RenderPieceCallback = (
+  square: string,
+  piece: PieceSymbol,
+  color: Color
+) => string;
 
-export type CoordMode = "none" | "left" | "right"; // | "double";
-
-export type ChessboardResize = true | false | "width" | "height";
+export type CoordinatesPlacement = "inside" | "outside" | "hidden";
 
 export interface ChessboardProps {
   fen?: string;
   orientation?: Color;
   duration?: number;
-  borderSize?: number;
-  borderColor?: string;
-  roundSize?: number;
-  fontSize?: number;
-  coordOutside?: boolean;
-  coordMode?: CoordMode;
-  coordWhite?: string;
-  coordBlack?: string;
+  coordinates?: CoordinatesPlacement;
   alphaPiece?: boolean;
-  resize?: ChessboardResize;
+  interactive?: boolean;
   visibility?: InputColor;
-  onRenderPiece?: RenderPieceCallback;
-  piecePack?: string;
-  pieceWhitePack?: string;
-  pieceBlackPack?: string;
+  mode?: "auto" | "move" | "press";
+  enableColor?: InputColor;
+  alignPiece?: boolean;
 }
 
 export type DoneFn = (is: boolean) => any;

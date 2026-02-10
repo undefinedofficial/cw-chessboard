@@ -8,11 +8,7 @@
         :style="{ transform: `translate(${coord.x * 100}%, ${i * 100}%)` }"
         @pointerdown.stop="resolveHandler(piece)"
       >
-        <component is="piece">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" version="1.1">
-            <use :href="`#${piecePack}-${pieceColor}${piece}`"></use>
-          </svg>
-        </component>
+        <div class="piece" :class="pieceColor + piece"></div>
       </button>
     </div>
   </Transition>
@@ -28,13 +24,9 @@ const props = defineProps<{
   color?: Color;
 }>();
 
-const { orientation, pieceWhitePack, pieceBlackPack } = useContext();
+const { orientation } = useContext();
 
 const pieceColor = computed(() => props.color || orientation.value);
-
-const piecePack = computed(() =>
-  pieceColor.value == "w" ? pieceWhitePack.value : pieceBlackPack.value
-);
 
 const coord = ref<SquarePoint | null>();
 let resolveHandler: (result: string) => void;
@@ -84,7 +76,7 @@ defineExpose({ require, abort });
   }
 }
 
-piece {
+.piece {
   position: absolute;
   top: 0;
   left: 0;

@@ -1,4 +1,9 @@
-import { indexToPoint, stringToFen, type SquareType, pointToIndex } from "./fen";
+import {
+  indexToPoint,
+  stringToFen,
+  type SquareType,
+  pointToIndex,
+} from "./fen";
 import type {
   Color,
   ChangeEvent,
@@ -10,7 +15,6 @@ import type {
 } from "../types";
 import { invertPoint, squareToString } from "../utils/point";
 import { PromiseQueue } from "./queue";
-import { createSvgPieceElement } from "../utils";
 
 const enum CHANGE_TYPE {
   ADD,
@@ -88,7 +92,8 @@ const seekChanges = (fromSquares: SquareType[], toSquares: SquareType[]) => {
 
     if (newSquare) appearedList.push({ piece: newSquare, index: i });
 
-    if (previousSquare) disappearedList.push({ piece: previousSquare, index: i });
+    if (previousSquare)
+      disappearedList.push({ piece: previousSquare, index: i });
   }
 
   const changes: Change[] = [];
@@ -131,7 +136,11 @@ const seekChanges = (fromSquares: SquareType[], toSquares: SquareType[]) => {
   return changes;
 };
 
-export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UsePiecesOptions) {
+export function usePieces({
+  onOrientationChange,
+  onChange,
+  onRenderPiece,
+}: UsePiecesOptions) {
   let container: HTMLElement | null = null;
   let fen = "";
   let duration = 200;
@@ -139,10 +148,10 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
   let isAlphaPiece = false;
   let squares: SquareType[] = [];
   let visibility: InputColor = "all";
-  let pieceWhitePack = "default";
-  let pieceBlackPack = "default";
 
-  const getPieceByIndex = (idx: number): Pick<Piece, "color" | "name"> | null => {
+  const getPieceByIndex = (
+    idx: number
+  ): Pick<Piece, "color" | "name"> | null => {
     const square = squares[idx];
     if (!square) return null;
     const name = square.toLowerCase() as PieceSymbol;
@@ -151,8 +160,12 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
 
   const getPieceByPoint = (p: Point) => getPieceByIndex(pointToIndex(p));
 
-  function createPieceElement(to: Point, piece: PieceSymbol, orientation: Color) {
-    const element = document.createElement("piece");
+  function createPieceElement(
+    to: Point,
+    piece: PieceSymbol,
+    orientation: Color
+  ) {
+    const element = document.createElement("div");
     const point = invertPoint(to, orientation);
     const figure = piece.toLowerCase();
     const color = figure === piece ? "b" : "w";
@@ -164,21 +177,24 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     element.setAttribute("data-color", color);
     element.classList.add("piece", dataPiece);
 
-    element.style.transform = `translate3d(${point.x * 100}%,${point.y * 100}%,0px)`;
+    element.style.transform = `translate3d(${point.x * 100}%,${
+      point.y * 100
+    }%,0px)`;
     element.style.zIndex = "5";
     element.style.opacity = "1";
     // chess invisible
-    element.style.display = visibility === "all" || visibility === color ? "block" : "none";
-
-    element.appendChild(
-      createSvgPieceElement(color === "w" ? pieceWhitePack : pieceBlackPack, dataPiece)
-    );
+    // element.style.display =
+    //   visibility === "all" || visibility === color ? "block" : "none";
 
     const modifyClass = onRenderPiece?.(square, piece, color);
     if (modifyClass) element.classList.add(modifyClass);
     return element;
   }
-  function getPieceElement(to: Point, piece: PieceSymbol): HTMLDivElement | null {
+
+  function getPieceElement(
+    to: Point,
+    piece: PieceSymbol
+  ): HTMLDivElement | null {
     const figure = piece.toLowerCase();
     const stringSquare = squareToString(to);
     const dataPiece = (figure === piece ? "b" : "w") + figure;
@@ -189,9 +205,14 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     return element;
   }
 
-  function setAlphaPiece(squarePoint: Point, pieceName: PieceSymbol, value: boolean) {
+  function setAlphaPiece(
+    squarePoint: Point,
+    pieceName: PieceSymbol,
+    value: boolean
+  ) {
     const element = getPieceElement(squarePoint, pieceName);
-    if (element) element.style.opacity = !value ? "1" : isAlphaPiece ? "0.5" : "0";
+    if (element)
+      element.style.opacity = !value ? "1" : isAlphaPiece ? "0.5" : "0";
     else
       console.warn(
         "Invalid value for square piece: ",
@@ -202,7 +223,11 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
   }
 
   let isValid = false;
-  function redraw(newsquares: SquareType[], orientation: Color, invalid = false) {
+  function redraw(
+    newsquares: SquareType[],
+    orientation: Color,
+    invalid = false
+  ) {
     if (!container) return console.warn("container is null");
 
     if (isValid && !invalid) return;
@@ -212,13 +237,19 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     for (let i = 0; i < newsquares.length; i++) {
       const piece = newsquares[i];
       if (!piece) continue;
-      container.appendChild(createPieceElement(indexToPoint(i), piece, orientation));
+      container.appendChild(
+        createPieceElement(indexToPoint(i), piece, orientation)
+      );
     }
     squares = newsquares;
     isValid = true;
   }
 
-  function createAnimation(fromSquares: SquareType[], toSquares: SquareType[], orientation: Color) {
+  function createAnimation(
+    fromSquares: SquareType[],
+    toSquares: SquareType[],
+    orientation: Color
+  ) {
     const changes = seekChanges(fromSquares, toSquares);
     const animatedElements: AnimatedElement[] = [];
     changes.forEach((change) => {
@@ -228,8 +259,14 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
           const element = getPieceElement(at, change.piece);
           if (!element) return;
           container!.appendChild(element); // move element to top layer
-          const atPoint = invertPoint(indexToPoint(change.atIndex), orientation);
-          const toPoint = invertPoint(indexToPoint(change.toIndex), orientation);
+          const atPoint = invertPoint(
+            indexToPoint(change.atIndex),
+            orientation
+          );
+          const toPoint = invertPoint(
+            indexToPoint(change.toIndex),
+            orientation
+          );
           animatedElements.push({
             type: change.type,
             element,
@@ -241,9 +278,11 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
         case CHANGE_TYPE.ADD:
           const element = createPieceElement(at, change.piece, orientation);
           element.style.opacity = "0";
-          element.style.display = "block";
           container!.appendChild(element);
-          const atPoint = invertPoint(indexToPoint(change.atIndex), orientation);
+          const atPoint = invertPoint(
+            indexToPoint(change.atIndex),
+            orientation
+          );
           animatedElements.push({
             type: change.type,
             element,
@@ -285,9 +324,14 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     orientation: Color
   ): Promise<void> {
     return new Promise<void>((resolve) => {
-      if (document.hasFocus?.() === false || !container) return resolve();
+      if (document.visibilityState !== "visible" || !container)
+        return resolve();
 
-      const animatedElements = createAnimation(fromSquares, toSquares, orientation);
+      const animatedElements = createAnimation(
+        fromSquares,
+        toSquares,
+        orientation
+      );
 
       let frameHandle: number | null = null;
       let startTime: number;
@@ -308,7 +352,10 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
             // fix bug z-index
             animatedItem.element.style.zIndex = "5";
 
-            if (animatedItem.type === CHANGE_TYPE.REMOVE && animatedItem.element.parentNode)
+            if (
+              animatedItem.type === CHANGE_TYPE.REMOVE &&
+              animatedItem.element.parentNode
+            )
               container!.removeChild(animatedItem.element);
           }
           resolve();
@@ -337,7 +384,9 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
               break;
             }
             case CHANGE_TYPE.ADD:
-              animatedItem.element.style.opacity = (Math.round(progress * 100) / 100).toString();
+              animatedItem.element.style.opacity = (
+                Math.round(progress * 100) / 100
+              ).toString();
               break;
             case CHANGE_TYPE.REMOVE:
               animatedItem.element.style.opacity = (
@@ -359,28 +408,16 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
   function setContainer(newContainer: HTMLElement) {
     container = newContainer;
   }
-  function setPiecePack(packWhite: string, packBlack: string, animate = false) {
-    if (packWhite === pieceWhitePack && packBlack === pieceBlackPack) return;
 
-    pieceWhitePack = packWhite;
-    pieceBlackPack = packBlack;
-
-    let dur = animate ? duration : 0;
-    if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
-
-    const fromTask = queue.addTask(() => runAnimate(new Array(...squares), [], dur, orientation));
-    const toTask = queue.addTask(() =>
-      runAnimate([], new Array(...squares), dur, orientation).then(() =>
-        redraw(squares, orientation, true)
-      )
-    );
-    return Promise.all([fromTask, toTask]);
-  }
-
-  async function movePiece(from: Point, to: Point, animate = false): Promise<void> {
+  async function movePiece(
+    from: Point,
+    to: Point,
+    animate = false
+  ): Promise<void> {
     const newSquares = new Array(...squares);
     const fromCoord = pointToIndex(from);
-    if (!newSquares[fromCoord]) return console.warn("no piece on", squareToString(from));
+    if (!newSquares[fromCoord])
+      return console.warn("no piece on", squareToString(from));
 
     const toCoord = pointToIndex(to);
     newSquares[toCoord] = newSquares[fromCoord];
@@ -390,7 +427,9 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
 
     return queue
-      .addTask(() => runAnimate(new Array(...squares), newSquares, dur, orientation))
+      .addTask(() =>
+        runAnimate(new Array(...squares), newSquares, dur, orientation)
+      )
       .then(() => redraw(newSquares, orientation, true));
   }
 
@@ -417,13 +456,18 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     let dur = animate ? duration : 0;
     if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
 
-    const fromTask = queue.addTask(() => runAnimate(new Array(...squares), [], dur, orientation));
+    const fromTask = queue.addTask(() =>
+      runAnimate(new Array(...squares), [], dur, orientation)
+    );
     const toTask = queue.addTask(() =>
       runAnimate([], new Array(...squares), dur, orientation).then(() =>
         redraw(squares, orientation, true)
       )
     );
-    return Promise.all([fromTask.then(() => onOrientationChange?.(orientation)), toTask]);
+    return Promise.all([
+      fromTask.then(() => onOrientationChange?.(orientation)),
+      toTask,
+    ]);
   }
 
   function setDuration(newDuration: number) {
@@ -440,7 +484,8 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     let dur = animate ? duration : 0;
     if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
 
-    let oldSquares = visibility === "none" ? new Array(64).fill(null) : [...squares];
+    let oldSquares =
+      visibility === "none" ? new Array(64).fill(null) : [...squares];
     let newSquares: SquareType[];
     if (newVisibility === "all") {
       oldSquares = new Array(64).fill(null);
@@ -448,9 +493,13 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     } else if (newVisibility === "none") {
       newSquares = new Array(64).fill(null);
     } else if (newVisibility === "w") {
-      newSquares = squares.map((square) => (square?.toUpperCase() === square ? square : null));
+      newSquares = squares.map((square) =>
+        square?.toUpperCase() === square ? square : null
+      );
     } else if (newVisibility === "b") {
-      newSquares = squares.map((square) => (square?.toLowerCase() === square ? square : null));
+      newSquares = squares.map((square) =>
+        square?.toLowerCase() === square ? square : null
+      );
     }
     visibility = newVisibility;
 
@@ -465,7 +514,6 @@ export function usePieces({ onOrientationChange, onChange, onRenderPiece }: UseP
     getPieceByIndex,
     getPieceByPoint,
     movePiece,
-    setPiecePack,
     setAlphaPiece,
     setFen,
     setDuration,

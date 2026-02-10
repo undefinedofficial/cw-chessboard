@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 import minimist from "minimist";
+import tailwindcss from "@tailwindcss/vite";
 
 const { f } = minimist(process.argv.slice(2));
 
@@ -24,14 +25,18 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
-          nodeTransforms: process.env.NODE_ENV === "production" ? [removeDataTestAttrs] : [],
+          nodeTransforms:
+            process.env.NODE_ENV === "production" ? [removeDataTestAttrs] : [],
         },
       },
     }),
+    tailwindcss(),
   ],
   resolve: {
     alias: {
-      "cw-chessboard": fileURLToPath(new URL("./src/chessboard", import.meta.url)),
+      "cw-chessboard": fileURLToPath(
+        new URL("./src/chessboard", import.meta.url)
+      ),
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
