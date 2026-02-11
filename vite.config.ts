@@ -4,33 +4,15 @@ import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 import minimist from "minimist";
 import tailwindcss from "@tailwindcss/vite";
+import dts from "vite-plugin-dts";
 
 const { f } = minimist(process.argv.slice(2));
 
-function removeDataTestAttrs(node: any) {
-  if (node.type === 1) {
-    node.props = node.props.filter((prop: any) => {
-      if (prop.name === "data-test") return false;
-      return !(
-        prop.name === "bind" &&
-        prop.arg &&
-        prop.arg.content &&
-        prop.arg.content === "data-test"
-      );
-    });
-  }
-}
 export default defineConfig({
   plugins: [
-    vue({
-      template: {
-        compilerOptions: {
-          nodeTransforms:
-            process.env.NODE_ENV === "production" ? [removeDataTestAttrs] : [],
-        },
-      },
-    }),
+    vue(),
     tailwindcss(),
+    dts({ rollupTypes: true, tsconfigPath: "./tsconfig.app.json" }),
   ],
   resolve: {
     alias: {
@@ -50,7 +32,7 @@ export default defineConfig({
       formats: f === "iife" ? ["iife"] : ["es", "umd"],
       entry: resolve(__dirname, "src/chessboard/index.ts"),
       name: "cw-chessboard",
-      fileName: "cw-chessboard",
+      fileName: "index",
     },
     rollupOptions: {
       external: f === "iife" ? ["vue"] : ["vue"],

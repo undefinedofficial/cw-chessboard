@@ -2,10 +2,22 @@
   "name": "cw-chessboard",
   "description": "Simple and Fast Typescript Vue Chessboard from chesswood.online with more plugins",
   "version": "2.2.0",
-  "files": [
-    "src/chessboard/*"
-  ],
-  "main": "src/chessboard/index.ts",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": {
+        "require": "./dist/index.d.cts",
+        "import": "./dist/index.d.ts",
+        "default": "./dist/index.d.ts"
+      },
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "dev": "vite --host",
     "type-check": "vue-tsc --noEmit -p tsconfig.app.json --composite false",
