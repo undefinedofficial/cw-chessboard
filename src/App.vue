@@ -1,17 +1,21 @@
 <template>
   <div class="chessboard-preview">
     <Chessboard
-      :fen="fen"
       :orientation="orientation"
-      :coordMode="coordMode"
+      :coordinates-dir="coordMode"
+      :coordinates="coordinates"
       :duration="duration"
-      :alphaPiece="alphaPiece"
       :visibility="visibility"
+      :alignPiece="alignPiece"
+      :interactive="!viewonly"
+      :style="style"
       ref="chessboardEl"
+      @beforemove="onBeforeMove"
+      @aftermove="onAfterMove"
+      @cancelmove="onCancelMove($event)"
+      @entersquare="onEnterSquare($event)"
+      @leavesquare="onLeaveSquare($event)"
     >
-      <!-- <ChessboardSurface white="#f0d9b5" black="#b58863" />
-      <ChessboardPieces />
-
       <ChessboardCircle class="text-red-500/80" square="a4" />
       <ChessboardSquare square="a5" class="bg-sky-700" />
       <ChessboardFrame square="b5" class="text-green-700" />
@@ -38,12 +42,6 @@
         1.0
       </ChessboardSquare>
 
-      <ChessboardFrame
-        class="text-green-800/60"
-        v-if="dropCoord"
-        :square="dropCoord"
-      />
-
       <ChessboardSquare
         class="bg-cyan-400/60"
         v-for="move in lastMove"
@@ -65,24 +63,17 @@
         :square="move"
       />
 
-      <ChessboardControl
-        v-if="!viewonly"
-        :enableColor="turn"
-        :mode="moveMode"
-        :alignPiece="alignPiece"
-        @beforeMove="onBeforeMove"
-        @afterMove="onAfterMove"
-        @cancelMove="onCancelMove($event)"
-        @enterSquare="onEnterSquare($event)"
-        @leaveSquare="onLeaveSquare($event)"
-        @dropMove="onDropMove"
-        @dropEnd="onDropEnd"
-      />
-      <PromotionDialog ref="promotionDialogEl" /> -->
+      <PromotionDialog ref="promotionDialogEl" />
     </Chessboard>
   </div>
   <div class="chessboard-config m-5">
     <div class="flex flex-col w-full h-full space-y-3">
+      <ControlRadio
+        title="coordinates"
+        name="moveMode"
+        v-model="coordinates"
+        :items="['none', 'inside', 'outside']"
+      />
       <ControlRadio
         title="move mode"
         name="moveMode"
@@ -183,20 +174,6 @@
 
       <div class="flex items-center ps-3">
         <input
-          id="coordOutside"
-          type="checkbox"
-          v-model="coordOutside"
-          class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
-        />
-        <label
-          for="coordOutside"
-          class="w-full py-3 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-        >
-          coord outside
-        </label>
-      </div>
-      <div class="flex items-center ps-3">
-        <input
           id="viewonly"
           type="checkbox"
           v-model="viewonly"
@@ -246,26 +223,13 @@
         min="0"
         max="9"
       />
-
-      <div class="flex flex-col items-center space-y-3">
-        pieces packs
-        <div class="h-64 flex space-x-3">
-          <ChessboardPiece
-            v-for="piece in pieces"
-            :piecePack="piece"
-            class="w-16 h-16"
-            piece="Q"
-            draggable
-          />
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
-import { Chess, type PieceSymbol } from "chess.ts";
+import { computed, onMounted, ref, useTemplateRef } from "vue";
+import { Chess, type PieceSymbol as ChessPieceSymbol } from "chess.ts";
 
 import {
   type InputColor,
@@ -276,12 +240,16 @@ import {
   ChessboardDot,
   ChessboardFrame,
   ChessboardCircle,
+  type InputType,
+  type PieceSymbol,
+  type CoordinatesPlacement,
 } from "cw-chessboard/index";
 import ControlRadio from "./ControlRadio.vue";
 import ControlRange from "./ControlRange.vue";
+import { useCssVars } from "./hooks/cssVars";
 
-// const chessboardEl = ref<InstanceType<typeof Chessboard>>();
-const promotionDialogEl = ref<InstanceType<typeof PromotionDialog>>();
+const chessboard = useTemplateRef("chessboardEl");
+const promotionDialogEl = useTemplateRef("promotionDialogEl");
 
 let chess = new Chess();
 const boards = ["default", "blue", "green", "sport", "wood_light"]; // "wood_light"],
@@ -301,27 +269,57 @@ const fenProxy = computed({
     fen.value = v;
   },
 });
-
-const borderSize = ref(20);
-const roundSize = ref(0);
-const fontSize = ref(28 * 2);
-const duration = ref(300);
-const coordOutside = ref(false);
-const alphaPiece = ref(true);
+onMounted(() => {
+  chessboard.value?.pieces.setFen(fenProxy.value);
+});
 const orientation = ref<"w" | "b">("w");
+const duration = ref(300);
+
+const borderSize = ref(4);
+const roundSize = ref(0);
+const fontSize = ref(4);
+const coordinates = ref<CoordinatesPlacement>("outside");
+const alphaPiece = ref(true);
 const coordMode = ref<any>("left");
 const moveMode = ref<"auto" | "move" | "press">("auto");
 const viewonly = ref(false);
 const alignPiece = ref(false);
 const arrowSize = ref(7);
 
+const style = useCssVars(
+  computed(() => ({
+    "cw-square-color-dark": "hsl(145deg 32% 44%)",
+    "cw-square-color-light": "hsl(51deg 24% 84%)",
+
+    "cw-square-font-family": "sans-serif",
+    "cw-square-font-scale": fontSize.value.toString(),
+
+    "cw-outer-gutter-width": borderSize.value + "%",
+    "cw-inner-border-width": "1px",
+    "cw-inner-border-radius": roundSize.value + "%",
+
+    "cw-coords-inside-coord-padding-left": "0.5%",
+    "cw-coords-inside-coord-padding-right": "0.5%",
+
+    "cw-ghost-piece-opacity": alphaPiece.value ? "0.35" : "0",
+    "cw-piece-drag-z-index": "9999",
+    "cw-piece-drag-coarse-scale": "2.4",
+
+    "cw-piece-padding": "0.3%",
+    "cw-p-piece-drag-scale": "1",
+  }))
+);
+
 const moveToSquare = ref<string | null>(null);
 const moveFromSquare = ref<string | null>(null);
 const moveVariants = ref<string[]>([]);
 const lastMove = ref<string[]>([]);
-const dropCoord = ref<string | null>(null);
 
-const onBeforeMove = (square: string, done: (accept: boolean) => void) => {
+const onBeforeMove = (
+  square: string,
+  piece: PieceSymbol,
+  done: (accept: boolean) => void
+) => {
   console.log("BeforeMove: ", square);
 
   const moves = chess.moves({ square, verbose: true });
@@ -332,16 +330,16 @@ const onBeforeMove = (square: string, done: (accept: boolean) => void) => {
 
   done(true);
 };
+
 const onAfterMove = async (
   fromSquare: string,
   toSquare: string,
+  type: InputType,
   done: (accept: boolean) => void
 ) => {
-  let promotion!: PieceSymbol;
+  let promotion!: ChessPieceSymbol;
   if (chess.isPromotion({ from: fromSquare, to: toSquare }))
-    promotion = (await promotionDialogEl.value!.require(
-      toSquare
-    )) as PieceSymbol;
+    promotion = await promotionDialogEl.value!.require(toSquare);
 
   console.log("AfterMove: ", fromSquare, toSquare);
 
@@ -353,10 +351,11 @@ const onAfterMove = async (
   if (!move) return done(false);
 
   lastMove.value = [fromSquare];
-  await done(true);
+  done(true);
   lastMove.value.push(toSquare);
 
   fen.value = chess.fen();
+  chessboard.value?.pieces.setFen(fen.value, type === "click");
   turn.value = chess.turn();
 };
 const onCancelMove = (square: string) => {
@@ -372,16 +371,6 @@ const onEnterSquare = (square: string) => {
 };
 const onLeaveSquare = (square: string) => {
   console.log("LeaveSquare: ", square);
-};
-
-const onDropMove = (square: string) => {
-  console.log("DropMove: ", square);
-  dropCoord.value = square;
-};
-
-const onDropEnd = (piece: string, square: string) => {
-  alert("DropEnd: " + piece + " " + square);
-  dropCoord.value = null;
 };
 </script>
 

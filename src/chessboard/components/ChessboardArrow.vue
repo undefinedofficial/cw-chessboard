@@ -37,7 +37,7 @@
       :y2="to.y"
       :marker-end="`url(#${pointerId})`"
       stroke="currentColor"
-      :stroke-width="size * 1.5"
+      :stroke-width="size"
       stroke-linecap="round"
     />
   </svg>
@@ -45,8 +45,9 @@
 
 <script lang="ts" setup>
 import { computed, useId } from "vue";
-import { invertPoint, pointHalfSquareNS, squareToPointNS, stringToSquare } from "../utils/point";
+import { invertPoint, stringToSquare } from "../utils/square";
 import { useContext } from "../hooks/context";
+import type { AbsolutePoint, SquarePoint } from "../types";
 
 const props = withDefaults(
   defineProps<{
@@ -57,19 +58,36 @@ const props = withDefaults(
   }>(),
   {
     size: 7,
-    offset: 36,
+    offset: 24,
   }
 );
+
+const squareToPointNS = ({ x, y }: SquarePoint) => ({
+  x: x * 128,
+  y: y * 128,
+});
+const pointHalfSquareNS = ({ x, y }: AbsolutePoint): AbsolutePoint => ({
+  x: x + 64,
+  y: y + 64,
+});
 
 const pointerId = useId();
 
 const { orientation } = useContext();
 
 const fromPoint = computed(() =>
-  pointHalfSquareNS(squareToPointNS(invertPoint(stringToSquare(props.square), orientation.value)))
+  pointHalfSquareNS(
+    squareToPointNS(
+      invertPoint(stringToSquare(props.square), orientation.value)
+    )
+  )
 );
 const toPoint = computed(() =>
-  pointHalfSquareNS(squareToPointNS(invertPoint(stringToSquare(props.toSquare), orientation.value)))
+  pointHalfSquareNS(
+    squareToPointNS(
+      invertPoint(stringToSquare(props.toSquare), orientation.value)
+    )
+  )
 );
 const from = computed(() => {
   let { x, y } = fromPoint.value;
@@ -98,6 +116,7 @@ const to = computed(() => {
   position: absolute;
   z-index: 10;
   pointer-events: none;
+  inset: 0;
 }
 
 .arrow-head {

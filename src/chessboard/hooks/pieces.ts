@@ -13,8 +13,8 @@ import type {
   RenderPieceCallback,
   Piece,
 } from "../types";
-import { invertPoint, squareToString } from "../utils/point";
-import { PromiseQueue } from "./queue";
+import { invertPoint, squareToString } from "../utils/square";
+import { PromiseQueue } from "../utils/PromiseQueue";
 
 const enum CHANGE_TYPE {
   ADD,
@@ -145,7 +145,6 @@ export function usePieces({
   let fen = "";
   let duration = 200;
   let orientation: Color = "w";
-  let isAlphaPiece = false;
   let squares: SquareType[] = [];
   let visibility: InputColor = "all";
 
@@ -175,13 +174,17 @@ export function usePieces({
     element.setAttribute("data-square", square);
     element.setAttribute("data-piece", dataPiece);
     element.setAttribute("data-color", color);
-    element.classList.add("piece", dataPiece);
+    element.classList.add(
+      "piece",
+      visibility === "all" || visibility === color ? dataPiece : ""
+    );
 
     element.style.transform = `translate3d(${point.x * 100}%,${
       point.y * 100
     }%,0px)`;
     element.style.zIndex = "5";
-    element.style.opacity = "1";
+    // element.style.opacity = "1";
+
     // chess invisible
     // element.style.display =
     //   visibility === "all" || visibility === color ? "block" : "none";
@@ -205,23 +208,6 @@ export function usePieces({
     return element;
   }
 
-  function setAlphaPiece(
-    squarePoint: Point,
-    pieceName: PieceSymbol,
-    value: boolean
-  ) {
-    const element = getPieceElement(squarePoint, pieceName);
-    if (element)
-      element.style.opacity = !value ? "1" : isAlphaPiece ? "0.5" : "0";
-    else
-      console.warn(
-        "Invalid value for square piece: ",
-        squareToString(squarePoint),
-        pieceName,
-        value ? "on" : "off"
-      );
-  }
-
   let isValid = false;
   function redraw(
     newsquares: SquareType[],
@@ -232,7 +218,7 @@ export function usePieces({
 
     if (isValid && !invalid) return;
 
-    container.innerHTML = "";
+    container.replaceChildren();
 
     for (let i = 0; i < newsquares.length; i++) {
       const piece = newsquares[i];
@@ -370,7 +356,7 @@ export function usePieces({
 
         animatedElements.forEach((animatedItem) => {
           // fix bug z-index
-          animatedItem.element.style.zIndex = "15";
+          animatedItem.element.classList.toggle("moving", true);
 
           switch (animatedItem.type) {
             case CHANGE_TYPE.MOVE: {
@@ -395,6 +381,7 @@ export function usePieces({
 
               break;
           }
+          animatedItem.element.classList.toggle("moving", false);
         });
       }
       frameHandle = requestAnimationFrame(animationStep);
@@ -407,30 +394,6 @@ export function usePieces({
 
   function setContainer(newContainer: HTMLElement) {
     container = newContainer;
-  }
-
-  async function movePiece(
-    from: Point,
-    to: Point,
-    animate = false
-  ): Promise<void> {
-    const newSquares = new Array(...squares);
-    const fromCoord = pointToIndex(from);
-    if (!newSquares[fromCoord])
-      return console.warn("no piece on", squareToString(from));
-
-    const toCoord = pointToIndex(to);
-    newSquares[toCoord] = newSquares[fromCoord];
-    newSquares[fromCoord] = null;
-
-    let dur = animate ? duration : 0;
-    if (queue.Size > 0) dur = dur / (1 + Math.pow(queue.Size / 5, 2));
-
-    return queue
-      .addTask(() =>
-        runAnimate(new Array(...squares), newSquares, dur, orientation)
-      )
-      .then(() => redraw(newSquares, orientation, true));
   }
 
   async function setFen(newFen: string, animate = false) {
@@ -474,10 +437,6 @@ export function usePieces({
     duration = newDuration;
   }
 
-  function setIsAlphaPiece(newAlphaPiece: boolean) {
-    isAlphaPiece = newAlphaPiece;
-  }
-
   async function setVisibility(newVisibility: InputColor, animate = false) {
     if (visibility === newVisibility) return;
 
@@ -513,12 +472,9 @@ export function usePieces({
   return {
     getPieceByIndex,
     getPieceByPoint,
-    movePiece,
-    setAlphaPiece,
     setFen,
     setDuration,
     setOrientation,
-    setIsAlphaPiece,
     setContainer,
     setVisibility,
     terminate,

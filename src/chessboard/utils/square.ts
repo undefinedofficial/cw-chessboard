@@ -63,7 +63,7 @@ export function pieceToSymbol(piece: PieceSymbol): PieceCode {
 export function symbolToPiece(piece: PieceCode): PieceSymbol {
   const color = piece[0];
   const type = piece[1];
-  return (color === "w" ? type.toUpperCase() : type) as PieceSymbol;
+  return (color === "w" ? type!.toUpperCase() : type) as PieceSymbol;
 }
 
 export const isPromise = <T>(

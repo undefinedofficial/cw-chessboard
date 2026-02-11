@@ -69,7 +69,11 @@ const DRAGGING_SENSITIVE = 50;
 </script>
 
 <script lang="ts" setup>
-import { onMounted, watch, useTemplateRef, shallowRef, ref } from "vue";
+import { onMounted, watch, useTemplateRef, shallowRef } from "vue";
+import ChessboardContainer from "./ChessboardContainer.vue";
+import { provideContext } from "../hooks/context";
+import { usePieces, type UseChessboardPieces } from "../hooks/pieces";
+
 import type {
   ChessboardProps,
   ChangeEvent,
@@ -77,20 +81,20 @@ import type {
   DoneFn,
   Piece,
   Point,
+  PieceCode,
+  PieceSymbol,
+  Square,
+  InputType,
 } from "../types";
-import { usePieces } from "../hooks/pieces";
-import type { UseChessboardPieces } from "../hooks/pieces";
-import { provideContext } from "../hooks/context";
 import {
   invertPoint,
   isWhiteSquare,
-  normalizePoint,
   pointEqual,
   pointToSquare,
   squareToString,
   squareValid,
+  symbolToPiece,
 } from "../utils/square";
-import ChessboardContainer from "./ChessboardContainer.vue";
 
 const props = withDefaults(defineProps<ChessboardProps>(), {
   orientation: "w",
@@ -105,8 +109,13 @@ const emit = defineEmits<{
   ready: [UseChessboardPieces];
   moves: [moves: ChangeEvent[]];
 
-  beforemove: [square: string, done: DoneFn];
-  aftermove: [fromSquare: string, toSquare: string, done: DoneFn];
+  beforemove: [square: string, piece: PieceSymbol, done: DoneFn];
+  aftermove: [
+    fromSquare: string,
+    toSquare: string,
+    type: InputType,
+    done: DoneFn
+  ];
   cancelmove: [square: string];
   entersquare: [square: string];
   leavesquare: [square: string];
@@ -116,6 +125,7 @@ const emit = defineEmits<{
 
 const color = shallowRef<Color>(props.orientation);
 const piecesContainer = useTemplateRef("piecesContainer");
+
 const pieces = usePieces({
   onChange(moves) {
     emit("moves", moves);
@@ -127,11 +137,10 @@ const pieces = usePieces({
 
 watch(
   props,
-  async ({ fen, orientation, alphaPiece, duration, visibility }) => {
+  async ({ fen, orientation, duration, visibility }) => {
     if (fen) pieces.setFen(fen, true);
     pieces.setOrientation(orientation, true);
     pieces.setVisibility(visibility, true);
-    pieces.setIsAlphaPiece(alphaPiece);
     pieces.setDuration(duration);
   },
   { deep: true }
@@ -148,9 +157,13 @@ onMounted(() => {
   if (props.fen) pieces.setFen(props.fen);
   pieces.setOrientation(props.orientation);
   pieces.setVisibility(props.visibility);
-  pieces.setIsAlphaPiece(props.alphaPiece);
   emit("ready", pieces);
 });
+
+const queryPieceElement = (square: Square) =>
+  piecesContainer.value?.querySelector<HTMLDivElement>(
+    `.piece[data-square=${square}]`
+  );
 
 let _overSquare: string | null;
 let _fromSquare: Piece | null;
@@ -179,41 +192,37 @@ function onPointerDown(e: PointerEvent) {
 
   const fromSquare = squareToString(square);
 
-  const piece =
-    this._board[fromSquare].querySelector<HTMLElement>(`[data-piece]`);
-  const pieceCode = symbolToPiece(
+  const piece = queryPieceElement(fromSquare);
+
+  const pieceSymbol = symbolToPiece(
     piece?.dataset.piece! as PieceCode
   ) as PieceSymbol;
-  const color = piece?.dataset.color as Color;
+
+  const pieceColor = piece?.dataset.color as Color;
 
   // Click for selecting a chess piece
-  if (!piece || !_isEnabledColor(color)) return;
+  if (!piece || !_isEnabledColor(pieceColor)) return;
 
   // If color piece same as current piece then reset moving piece and set it as active piece.
-  if (color === _fromSquare?.color) _cancelMove(false);
+  if (pieceColor === _fromSquare?.color) _cancelMove(false);
 
-  if (_fromSquare && color !== _fromSquare?.color) return;
+  if (_fromSquare && pieceColor !== _fromSquare?.color) return;
 
   _isDragging = true;
 
-  if (
-    !_emit(
-      "beforemove",
-      { from: fromSquare, piece: pieceCode },
-      { cancelable: true }
-    )
-  )
-    return;
+  emit("beforemove", fromSquare, pieceSymbol, (is) => {
+    if (!is) return;
 
-  _fromSquare = {
-    x: square.x,
-    y: square.y,
-    name: pieceCode as PieceSymbol,
-    color,
-  };
-  _onEnterSquare(_fromSquare);
+    _fromSquare = {
+      x: square.x,
+      y: square.y,
+      name: pieceSymbol as PieceSymbol,
+      color: pieceColor,
+    };
+    _onEnterSquare(_fromSquare);
 
-  (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
+    (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
+  });
 }
 function onPointerMove(e: PointerEvent) {
   if (!e.isPrimary || _disabled) return;
@@ -250,8 +259,7 @@ function onPointerMove(e: PointerEvent) {
     _holdPress = offsetX > DRAGGING_SENSITIVE || offsetY > DRAGGING_SENSITIVE;
     if (lastHoldPress !== _holdPress) {
       if (_holdPress) {
-        const piece =
-          _board[squareString].querySelector<HTMLElement>(`[data-piece]`);
+        const piece = queryPieceElement(squareString);
 
         if (!piece) throw new Error("Piece not found");
         _ghostElement = piece;
@@ -260,7 +268,7 @@ function onPointerMove(e: PointerEvent) {
         _pieceElement.classList.add("moving", "dragging");
         _ghostElement?.classList.toggle("secondary", true);
 
-        _board[squareString].appendChild(_pieceElement);
+        piecesContainer.value?.appendChild(_pieceElement);
       } else {
         _ghostElement?.classList.remove("secondary");
         _ghostElement = undefined;
@@ -270,25 +278,20 @@ function onPointerMove(e: PointerEvent) {
     }
   }
 
-  if (_holdPress && !_isRejectMove() && _pieceElement) {
-    const { x, y, height, width } =
-      _board[squareString].getBoundingClientRect();
-    _pieceElement.style.transform = `translate3d(${
-      e.clientX - x - width / 2
-    }px, ${
-      e.clientY - y - height / 2
+  if (_holdPress && !_isRejectMove() && _pieceElement && _ghostElement) {
+    const { width, height } = _ghostElement!.getBoundingClientRect();
+    _pieceElement.style.transform = `translate3d(${point.x - width / 2}px, ${
+      point.y - height / 2
     }px, 0) scale(var(--cw-p-piece-drag-scale))`;
   }
 
+  if (!squareValid(square)) return;
+
   if (props.alignPiece && _pieceElement) {
-    _pieceElement.style.transform = `translate3d(${
-      (square.x - _fromSquare.x) * 100
-    }%, ${
-      (square.y - _fromSquare.y) * 100
+    _pieceElement.style.transform = `translate3d(${square.x * 100}%, ${
+      square.y * 100
     }%, 0) scale(var(--cw-p-piece-drag-scale))`;
   }
-
-  if (!squareValid(square)) return;
 
   _onEnterSquare(square);
 }
@@ -329,23 +332,21 @@ function onPointerUp(e: PointerEvent) {
 
   const toSquare = squareToString(square);
 
-  const piece = _board[toSquare].querySelector<HTMLElement>(`[data-piece]`);
+  const piece = queryPieceElement(toSquare);
 
-  if (piece?.dataset.color === _fromSquare.color) {
-    return;
-  }
+  if (piece?.dataset.color === _fromSquare.color) return;
 
   // save the current position of the current piece in the current square before remove
 
   // const holdPress = !this._holdPress;
   // done is true if the move was successful and not emit cancel event else emit cancel event
-  _cancelMove(
-    !_emit("aftermove", {
-      from: squareToString(_fromSquare),
-      to: toSquare,
-      piece: piece?.dataset.piece!,
-      type: _holdPress ? "drag" : "click",
-    })
+
+  emit(
+    "aftermove",
+    squareToString(_fromSquare),
+    toSquare,
+    _holdPress ? "drag" : "click",
+    (is) => _cancelMove(!is)
   );
 }
 
@@ -409,36 +410,6 @@ defineExpose({ pieces });
 <style>
 .cw-wrapper,
 .cw-inner {
-  --cw-square-color-dark: hsl(145deg 32% 44%);
-  --cw-square-color-light: hsl(51deg 24% 84%);
-  /* --cw-square-color-dark-hover: hsl(144deg 75% 44%);
-  --cw-square-color-light-hover: hsl(52deg 98% 70%);
-  --cw-square-color-dark-active: hsl(142deg 77% 43%);
-  --cw-square-color-light-active: hsl(50deg 95% 64%);
-  --cw-outline-color-dark-active: hsl(138deg 85% 53% / 95%);
-  --cw-outline-color-light-active: hsl(66deg 97% 72% / 95%);
-  --cw-outline-color-focus: hsl(30deg 94% 55% / 90%);
-  --cw-outline-blur-radius: 3px;
-  --cw-outline-spread-radius: 4px; */
-  --cw-coords-font-family: sans-serif;
-  --cw-coords-scale: 4;
-  --cw-outer-gutter-width: 4%;
-  --cw-inner-border-width: 1px;
-  --cw-inner-border-radius: 8px;
-  --cw-coords-inside-coord-padding-left: 0.5%;
-  --cw-coords-inside-coord-padding-right: 0.5%;
-  /* --cw-move-target-marker-color-dark-square: hsl(144deg 64% 9% / 90%); */
-  /* --cw-move-target-marker-color-light-square: hsl(144deg 64% 9% / 90%); */
-  /* --cw-move-target-marker-radius: 24%; */
-  /* --cw-move-target-marker-radius-occupied: 82%; */
-  --cw-ghost-piece-opacity: 0.35;
-  --cw-piece-drag-z-index: 9999;
-  --cw-piece-drag-coarse-scale: 2.4;
-  --cw-piece-padding: 0.3%;
-  /* --cw-arrow-color-primary: hsl(40deg 100% 50% / 80%); */
-  /* --cw-arrow-color-secondary: hsl(7deg 93% 61% / 80%); */
-  --cw-p-piece-drag-scale: 1;
-
   position: relative;
   aspect-ratio: 1;
 }
@@ -471,7 +442,7 @@ defineExpose({ pieces });
   user-select: none;
 
   font-family: var(--cw-coords-font-family);
-  font-size: calc(var(--cw-coords-font-size) * 1cqw);
+  font-size: calc(var(--cw-coords-font-scale) * 1cqw);
 }
 .cw-chessboard > [data-square],
 .cw-chessboard .piece {
@@ -499,28 +470,17 @@ defineExpose({ pieces });
 [data-square-color="black"] {
   --cw-p-square-color: var(--cw-square-color-dark);
   background-color: var(--cw-p-square-color);
-  /* --cw-p-label-color: var(--cw-square-color-light);
-  --cw-p-square-color-hover: var(--cw-square-color-dark-hover);
-  --cw-p-move-target-marker-color: var(--cw-move-target-marker-color-dark-square);
-  --cw-p-square-color-active: var(--cw-square-color-dark-active);
-  --cw-p-outline-color-active: var(--cw-outline-color-dark-active); */
 }
 [data-square-color="white"] {
   --cw-p-square-color: var(--cw-square-color-light);
   background-color: var(--cw-p-square-color);
-  /* --cw-p-label-color: var(--cw-square-color-dark);
-  --cw-p-square-color-hover: var(--cw-square-color-light-hover);
-  --cw-p-move-target-marker-color: var(--cw-move-target-marker-color-light-square);
-  --cw-p-square-color-active: var(--cw-square-color-light-active);
-  --cw-p-outline-color-active: var(--cw-outline-color-light-active); */
 }
 
 .coords {
   position: absolute;
   display: none;
   font-family: var(--cw-coords-font-family);
-  /* font-size: var(--cw-coords-font-size); */
-  font-size: calc(1cqw * var(--cw-coords-scale));
+  font-size: calc(1cqw * var(--cw-coords-font-scale));
   pointer-events: none;
   touch-action: none;
   -webkit-user-select: none;
@@ -615,14 +575,11 @@ defineExpose({ pieces });
   pointer-events: none;
 }
 
-[data-square] .piece.moving {
-  position: absolute;
+.piece.moving[data-square] {
   z-index: 15;
-  left: 0;
-  top: 0;
 }
 
-[data-square] .piece.secondary {
+.piece.secondary[data-square] {
   z-index: 5;
   opacity: var(--cw-ghost-piece-opacity);
 }
@@ -632,7 +589,7 @@ defineExpose({ pieces });
 }
 
 @media (pointer: coarse) {
-  [data-square] .piece.moving {
+  .piece.moving[data-square] {
     --cw-p-piece-drag-scale: var(--cw-piece-drag-coarse-scale);
   }
 }
@@ -684,6 +641,7 @@ defineExpose({ pieces });
 .wr {
   background-image: url("../assets/pieces/staunty/wr.svg");
 }
+
 .dialog {
   position: absolute;
   inset: 0;

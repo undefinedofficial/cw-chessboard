@@ -4,16 +4,17 @@ export type SquareType = PieceSymbol | null;
 export const stringToFen = (fen: string) => {
   const squares: SquareType[] = [];
 
-  const fenParts = fen.split(" ")[0].split("/");
+  const fenParts = fen.split(" ")[0]!.split("/")!;
   if (fenParts.length !== 8) throw new Error("Invalid fen string");
 
   for (let y = 0; y < 8; y++) {
     let offset = 0;
-    for (let x = 0; x < fenParts[y].length; x++) {
-      const piece = fenParts[y][x];
-      offset = parseInt(piece);
+    for (let x = 0; x < fenParts[y]!.length; x++) {
+      const piece = fenParts[y]![x]!;
+      offset = parseInt(piece!);
 
-      if (Number.isNaN(offset)) squares.push(piece as PieceSymbol); // push symbol piece
+      if (Number.isNaN(offset))
+        squares.push(piece as PieceSymbol); // push symbol piece
       else squares.push(...Array(offset).fill(null)); // or empty squares
     }
   }

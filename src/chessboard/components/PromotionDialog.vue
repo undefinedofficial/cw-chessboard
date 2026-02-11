@@ -2,7 +2,7 @@
   <Transition name="promotion-dialog">
     <div v-if="coord" class="promotion-dialog">
       <button
-        v-for="(piece, i) in ['q', 'r', 'b', 'n']"
+        v-for="(piece, i) in PIECES"
         :key="i"
         class="promotion-piece"
         :style="{ transform: `translate(${coord.x * 100}%, ${i * 100}%)` }"
@@ -15,37 +15,39 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, Transition } from "vue";
+import { computed, ref, shallowRef, Transition } from "vue";
 import type { Color, SquarePoint } from "../types";
-import { invertPoint, stringToSquare } from "../utils/point";
+import { invertPoint, stringToSquare } from "../utils/square";
 import { useContext } from "../hooks/context";
 
 const props = defineProps<{
   color?: Color;
 }>();
 
+const PIECES = ["q", "r", "b", "n"] as const;
+
+type PIECE_TYPE = (typeof PIECES)[number];
+
 const { orientation } = useContext();
 
 const pieceColor = computed(() => props.color || orientation.value);
 
-const coord = ref<SquarePoint | null>();
-let resolveHandler: (result: string) => void;
+const coord = shallowRef<SquarePoint | null>();
+let resolveHandler: (result: PIECE_TYPE) => void;
 let rejectHandler: () => void;
+
 const require = (square: string) =>
-  new Promise<string>((resolve, reject) => {
+  new Promise<PIECE_TYPE>((resolve, reject) => {
     if (coord.value) return rejectHandler();
 
     coord.value = invertPoint(stringToSquare(square), orientation.value);
-    resolveHandler = (piece: string) => {
-      coord.value = null;
-      resolve(piece);
-    };
+    resolveHandler = resolve;
     rejectHandler = reject;
+  }).finally(() => {
+    coord.value = null;
   });
-const abort = () => {
-  coord.value = null;
-  rejectHandler();
-};
+
+const abort = () => rejectHandler?.();
 
 defineExpose({ require, abort });
 </script>

@@ -6,7 +6,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { invertPoint, stringToSquare } from "../utils";
+import { invertPoint, stringToSquare } from "../utils/square";
 import { useContext } from "../hooks/context";
 
 export interface ChessboardSquareProps {
@@ -31,6 +31,7 @@ const floatingStyles = computed(() => {
   width: 12.5%;
   height: 12.5%;
   z-index: 3;
+  display: flex;
 
   &.above {
     z-index: 14;

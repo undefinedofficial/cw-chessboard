@@ -1,11 +1,13 @@
 <template>
-  <ChessboardSquare v-bind="props" class="cw-chessboard-marker">
+  <ChessboardSquare v-bind="props">
     <div class="cw-chessboard-circle"></div>
   </ChessboardSquare>
 </template>
 
 <script setup lang="ts">
-import ChessboardSquare, { type ChessboardSquareProps } from "./ChessboardSquare.vue";
+import ChessboardSquare, {
+  type ChessboardSquareProps,
+} from "./ChessboardSquare.vue";
 
 const props = defineProps<ChessboardSquareProps>();
 </script>
@@ -20,5 +22,6 @@ const props = defineProps<ChessboardSquareProps>();
   border-style: solid;
   border-width: 4px;
   border-color: currentColor;
+  margin: auto;
 }
 </style>
