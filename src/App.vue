@@ -1,6 +1,7 @@
 <template>
   <div class="chessboard-preview">
     <Chessboard
+      :fen="fenProxy"
       :orientation="orientation"
       :coordinates-dir="coordMode"
       :coordinates="coordinates"
@@ -145,7 +146,8 @@
         v-model="borderSize"
         suffix="fr"
         min="0"
-        max="100"
+        step="0.1"
+        max="5"
       />
       <ControlRange
         title="round size"
@@ -153,7 +155,8 @@
         v-model="roundSize"
         suffix="fr"
         min="0"
-        max="100"
+        step="0.1"
+        max="5"
       />
       <ControlRange
         title="font size"
@@ -161,7 +164,8 @@
         v-model="fontSize"
         suffix="fr"
         min="0"
-        max="100"
+        step="0.1"
+        max="5"
       />
       <ControlRange
         title="animation duration"
@@ -248,6 +252,20 @@ import ControlRadio from "./ControlRadio.vue";
 import ControlRange from "./ControlRange.vue";
 import { useCssVars } from "./hooks/cssVars";
 
+import PIECE_BP from "../pieces/staunty/bp.svg?url";
+import PIECE_BR from "../pieces/staunty/br.svg?url";
+import PIECE_BN from "../pieces/staunty/bn.svg?url";
+import PIECE_BB from "../pieces/staunty/bb.svg?url";
+import PIECE_BQ from "../pieces/staunty/bq.svg?url";
+import PIECE_BK from "../pieces/staunty/bk.svg?url";
+
+import PIECE_WP from "../pieces/staunty/wp.svg?url";
+import PIECE_WR from "../pieces/staunty/wr.svg?url";
+import PIECE_WN from "../pieces/staunty/wn.svg?url";
+import PIECE_WB from "../pieces/staunty/wb.svg?url";
+import PIECE_WQ from "../pieces/staunty/wq.svg?url";
+import PIECE_WK from "../pieces/staunty/wk.svg?url";
+
 const chessboard = useTemplateRef("chessboardEl");
 const promotionDialogEl = useTemplateRef("promotionDialogEl");
 
@@ -269,9 +287,6 @@ const fenProxy = computed({
     fen.value = v;
   },
 });
-onMounted(() => {
-  chessboard.value?.pieces.setFen(fenProxy.value);
-});
 const orientation = ref<"w" | "b">("w");
 const duration = ref(300);
 
@@ -291,12 +306,12 @@ const style = useCssVars(
     "cw-square-color-dark": "hsl(145deg 32% 44%)",
     "cw-square-color-light": "hsl(51deg 24% 84%)",
 
-    "cw-square-font-family": "sans-serif",
-    "cw-square-font-scale": fontSize.value.toString(),
-
     "cw-outer-gutter-width": borderSize.value + "%",
     "cw-inner-border-width": "1px",
     "cw-inner-border-radius": roundSize.value + "%",
+
+    "cw-coords-font-family": "sans-serif",
+    "cw-coords-font-scale": fontSize.value.toString(),
 
     "cw-coords-inside-coord-padding-left": "0.5%",
     "cw-coords-inside-coord-padding-right": "0.5%",
@@ -307,6 +322,20 @@ const style = useCssVars(
 
     "cw-piece-padding": "0.3%",
     "cw-p-piece-drag-scale": "1",
+
+    "cw-piece-bp": `url("${PIECE_BP}")`,
+    "cw-piece-br": `url("${PIECE_BR}")`,
+    "cw-piece-bn": `url("${PIECE_BN}")`,
+    "cw-piece-bb": `url("${PIECE_BB}")`,
+    "cw-piece-bq": `url("${PIECE_BQ}")`,
+    "cw-piece-bk": `url("${PIECE_BK}")`,
+
+    "cw-piece-wp": `url("${PIECE_WP}")`,
+    "cw-piece-wr": `url("${PIECE_WR}")`,
+    "cw-piece-wn": `url("${PIECE_WN}")`,
+    "cw-piece-wb": `url("${PIECE_WB}")`,
+    "cw-piece-wq": `url("${PIECE_WQ}")`,
+    "cw-piece-wk": `url("${PIECE_WK}")`,
   }))
 );
 
@@ -391,7 +420,6 @@ body,
   width: 100vw;
   width: 100%;
   height: 100%;
-  overflow: hidden;
 }
 
 .chessboard-config {

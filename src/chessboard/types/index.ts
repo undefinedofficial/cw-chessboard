@@ -78,11 +78,11 @@ export type MovePieceFunction = (
   type?: string
 ) => Promise<void>;
 
-export type RenderPieceCallback = (
-  square: string,
-  piece: PieceSymbol,
-  color: Color
-) => string;
+// export type RenderPieceCallback = (
+//   square: string,
+//   piece: PieceSymbol,
+//   color: Color
+// ) => string;
 
 export type CoordinatesPlacement = "inside" | "outside" | "hidden";
 export type CoordinatesDirection = "left" | "right"; // | "double";

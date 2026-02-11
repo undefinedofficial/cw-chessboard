@@ -177,7 +177,7 @@ let _disabled: boolean | undefined;
 function onPointerDown(e: PointerEvent) {
   if (!e.isPrimary || _disabled) return;
 
-  e.stopPropagation();
+  // e.stopPropagation();
 
   const point = _getPosition(e);
 
@@ -192,32 +192,25 @@ function onPointerDown(e: PointerEvent) {
 
   const fromSquare = squareToString(square);
 
-  const piece = queryPieceElement(fromSquare);
-
-  const pieceSymbol = symbolToPiece(
-    piece?.dataset.piece! as PieceCode
-  ) as PieceSymbol;
-
-  const pieceColor = piece?.dataset.color as Color;
+  const piece = pieces.getPieceByPoint(square);
 
   // Click for selecting a chess piece
-  if (!piece || !_isEnabledColor(pieceColor)) return;
+  if (!piece || !_isEnabledColor(piece?.color!)) return;
 
   // If color piece same as current piece then reset moving piece and set it as active piece.
-  if (pieceColor === _fromSquare?.color) _cancelMove(false);
+  if (piece.color === _fromSquare?.color) _cancelMove(false);
 
-  if (_fromSquare && pieceColor !== _fromSquare?.color) return;
+  if (_fromSquare && piece.color !== _fromSquare?.color) return;
 
   _isDragging = true;
 
-  emit("beforemove", fromSquare, pieceSymbol, (is) => {
+  emit("beforemove", fromSquare, piece.name, (is) => {
     if (!is) return;
 
     _fromSquare = {
       x: square.x,
       y: square.y,
-      name: pieceSymbol as PieceSymbol,
-      color: pieceColor,
+      ...piece,
     };
     _onEnterSquare(_fromSquare);
 
@@ -238,7 +231,7 @@ function onPointerMove(e: PointerEvent) {
     }
   }
 
-  e.stopPropagation();
+  // e.stopPropagation();
 
   if (!_fromSquare || !_isDragging || _isRejectMove()) return;
 
@@ -300,17 +293,13 @@ function onPointerUp(e: PointerEvent) {
 
   _isDragging = false;
 
-  e.stopPropagation();
-  if (_isRejectMove()) {
-    return _cancelMove();
-  }
+  // e.stopPropagation();
+  if (_isRejectMove()) return _cancelMove();
 
   const point = _getPosition(e);
   const square = pointToSquare(point, color.value);
 
-  if (!squareValid(square)) {
-    return _cancelMove();
-  }
+  if (!squareValid(square)) return _cancelMove();
 
   // this need edit...
   if (_ghostElement) {
@@ -330,11 +319,8 @@ function onPointerUp(e: PointerEvent) {
   // Click for moving selected a chess piece
   if (!_fromSquare) return;
 
-  const toSquare = squareToString(square);
-
-  const piece = queryPieceElement(toSquare);
-
-  if (piece?.dataset.color === _fromSquare.color) return;
+  const piece = pieces.getPieceByPoint(square);
+  if (piece?.color === _fromSquare.color) return;
 
   // save the current position of the current piece in the current square before remove
 
@@ -344,14 +330,14 @@ function onPointerUp(e: PointerEvent) {
   emit(
     "aftermove",
     squareToString(_fromSquare),
-    toSquare,
+    squareToString(square),
     _holdPress ? "drag" : "click",
     (is) => _cancelMove(!is)
   );
 }
 
 function onPointerCancel(e: PointerEvent) {
-  e.stopPropagation();
+  // e.stopPropagation();
   _cancelMove(true);
 }
 
@@ -595,51 +581,51 @@ defineExpose({ pieces });
 }
 
 .bb {
-  background-image: url("../assets/pieces/staunty/bb.svg");
+  background-image: var(--cw-piece-bb);
 }
 
 .bk {
-  background-image: url("../assets/pieces/staunty/bk.svg");
+  background-image: var(--cw-piece-bk);
 }
 
 .bn {
-  background-image: url("../assets/pieces/staunty/bn.svg");
+  background-image: var(--cw-piece-bn);
 }
 
 .bp {
-  background-image: url("../assets/pieces/staunty/bp.svg");
+  background-image: var(--cw-piece-bp);
 }
 
 .bq {
-  background-image: url("../assets/pieces/staunty/bq.svg");
+  background-image: var(--cw-piece-bq);
 }
 
 .br {
-  background-image: url("../assets/pieces/staunty/br.svg");
+  background-image: var(--cw-piece-br);
 }
 
 .wb {
-  background-image: url("../assets/pieces/staunty/wb.svg");
+  background-image: var(--cw-piece-wb);
 }
 
 .wk {
-  background-image: url("../assets/pieces/staunty/wk.svg");
+  background-image: var(--cw-piece-wk);
 }
 
 .wn {
-  background-image: url("../assets/pieces/staunty/wn.svg");
+  background-image: var(--cw-piece-wn);
 }
 
 .wp {
-  background-image: url("../assets/pieces/staunty/wp.svg");
+  background-image: var(--cw-piece-wp);
 }
 
 .wq {
-  background-image: url("../assets/pieces/staunty/wq.svg");
+  background-image: var(--cw-piece-wq);
 }
 
 .wr {
-  background-image: url("../assets/pieces/staunty/wr.svg");
+  background-image: var(--cw-piece-wr);
 }
 
 .dialog {

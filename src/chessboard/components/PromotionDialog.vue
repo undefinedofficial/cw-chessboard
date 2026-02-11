@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, shallowRef, Transition } from "vue";
+import { computed,  shallowRef, Transition } from "vue";
 import type { Color, SquarePoint } from "../types";
 import { invertPoint, stringToSquare } from "../utils/square";
 import { useContext } from "../hooks/context";

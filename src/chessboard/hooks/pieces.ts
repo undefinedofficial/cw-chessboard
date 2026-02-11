@@ -10,10 +10,10 @@ import type {
   PieceSymbol,
   Point,
   InputColor,
-  RenderPieceCallback,
+  // RenderPieceCallback,
   Piece,
 } from "../types";
-import { invertPoint, squareToString } from "../utils/square";
+import { invertPoint, pieceToSymbol, squareToString } from "../utils/square";
 import { PromiseQueue } from "../utils/PromiseQueue";
 
 const enum CHANGE_TYPE {
@@ -62,15 +62,15 @@ interface UsePiecesOptions {
    * @param moves Array<ChangeEvent> changes pieces for the actual position.
    */
   onChange?: (moves: ChangeEvent[]) => void;
-  /**
-   * onRenderPiece
-   * @description callback when render piece.
-   * @param square square coordinates.
-   * @param piece piece name.
-   * @param color piece color.
-   * @returns modify class string.
-   */
-  onRenderPiece?: RenderPieceCallback;
+  // /**
+  //  * onRenderPiece
+  //  * @description callback when render piece.
+  //  * @param square square coordinates.
+  //  * @param piece piece name.
+  //  * @param color piece color.
+  //  * @returns modify class string.
+  //  */
+  // onRenderPiece?: RenderPieceCallback;
 }
 
 function squareDistance(index1: number, index2: number) {
@@ -139,8 +139,8 @@ const seekChanges = (fromSquares: SquareType[], toSquares: SquareType[]) => {
 export function usePieces({
   onOrientationChange,
   onChange,
-  onRenderPiece,
-}: UsePiecesOptions) {
+}: // onRenderPiece,
+UsePiecesOptions) {
   let container: HTMLElement | null = null;
   let fen = "";
   let duration = 200;
@@ -166,31 +166,25 @@ export function usePieces({
   ) {
     const element = document.createElement("div");
     const point = invertPoint(to, orientation);
-    const figure = piece.toLowerCase();
-    const color = figure === piece ? "b" : "w";
-    const dataPiece = color + figure;
+    const pieceCode = pieceToSymbol(piece);
+    const color = pieceCode[0] as Color;
     const square = squareToString(to);
 
     element.setAttribute("data-square", square);
-    element.setAttribute("data-piece", dataPiece);
-    element.setAttribute("data-color", color);
-    element.classList.add(
-      "piece",
-      visibility === "all" || visibility === color ? dataPiece : ""
-    );
+    element.classList.add("piece");
 
-    element.style.transform = `translate3d(${point.x * 100}%,${
-      point.y * 100
-    }%,0px)`;
-    element.style.zIndex = "5";
-    // element.style.opacity = "1";
+    if (visibility === "all" || visibility === color) {
+      element.setAttribute("data-color", color!);
+      element.setAttribute("data-piece", pieceCode);
+      element.classList.add(pieceCode);
 
-    // chess invisible
-    // element.style.display =
-    //   visibility === "all" || visibility === color ? "block" : "none";
+      element.style.transform = `translate3d(${point.x * 100}%,${
+        point.y * 100
+      }%,0px)`;
+    }
 
-    const modifyClass = onRenderPiece?.(square, piece, color);
-    if (modifyClass) element.classList.add(modifyClass);
+    // const modifyClass = onRenderPiece?.(square, piece, color);
+    // if (modifyClass) element.classList.add(modifyClass);
     return element;
   }
 
